@@ -13,6 +13,7 @@ namespace Security_Visio_AddIn
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
             //Hier könnte Ihr Code stehen
+            //könnt ihr das sehen?
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
