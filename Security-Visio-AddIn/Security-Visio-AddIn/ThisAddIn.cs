@@ -10,6 +10,7 @@ namespace Security_Visio_AddIn
 {
     public partial class ThisAddIn
     {
+        List<Visio.Shape> IssueList;
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
             string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
@@ -42,13 +43,45 @@ namespace Security_Visio_AddIn
             return names;
         }
 
+        //geht davon aus, dass sequence flows oder danger flows in das gateway führen
         public void gatewayValidator(Visio.Shapes shapes)
         {
             foreach(Visio.Shape shape in shapes)
             {
                 if(shape.Name == "Gateway")
                 {
-                    getIncomingShapes(shape);
+                    List<Visio.Shape>flowShapes = getIncomingShapes(shape);
+                    String comparisonShape = flowShapes.ElementAt(0).Name;
+                    foreach(Visio.Shape flowShape in flowShapes)
+                    {
+                        if(flowShape.Name != comparisonShape)
+                        {   //Wenn ungleiche Sequenzflüsse zusammengeführt werden, muss der ausgehende Sequenzfluss DangerFlow sein.
+                            if (shape.Connects.get_Item16(0).ToSheet.Name != "DangerFlow")
+                            {
+                                //Issue Handling
+                            }
+                        }
+                    }
+                    //Alle eingehenden Sequenzflüsse sind gleich, aber der ausgehende Sequenzfluss ist ungleich.
+                    if(comparisonShape != shape.Connects.get_Item16(0).ToSheet.Name)
+                    {
+                        //Issue Handling
+                    }
+                }
+            }
+        }
+
+        public void inspectionValidator(Visio.Shapes shapes)
+        {
+            var gluedShapesIDs = new List<long>();
+            foreach(Visio.Shape shape in shapes)
+            {
+                if(shape.Name == "Inspektion")
+                {
+                    Array glued2dShapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesIncoming2D, "");    // If the source object is a 2D shape, return the 2D shapes that are glued to this shape.
+                    foreach(Object element in glued2dShapes){
+                        gluedShapesIDs.Add((long)element);
+                    }
                 }
             }
         }
@@ -56,36 +89,35 @@ namespace Security_Visio_AddIn
         public List<Visio.Shape> getIncomingShapes(Visio.Shape currentShape)
         {
         var shapes = new List<Visio.Shape>();
-        Visio.Connects shapeFromConnects = currentShape.FromConnects;
-        foreach(Visio.Connect connect in shapeFromConnects)
+        Visio.Connects shapeFromConnections = currentShape.FromConnects;
+        foreach(Visio.Connect connection in shapeFromConnections)
             {
-            shapes.Add(connect.FromSheet);
+            shapes.Add(connection.FromSheet);  // https://docs.microsoft.com/de-de/office/vba/api/visio.connects
             }
         return shapes;
         }
-
-        public long[] getIncomingShapes1(Visio.Shape currentShape)       // https://docs.microsoft.com/de-de/office/vba/api/visio.shape.connectedshapes
+        public List<Visio.Shape> getOutgoingShapes(Visio.Shape currentShape)
         {
-            long[] lngShapeIDs;
-            int intCount;
-            Visio.VisConnectedShapesFlags test = Visio.VisConnectedShapesFlags.visConnectedShapesIncomingNodes;
-            long[] test1 = currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, "");
-            //lngShapeIDs = Array.ConvertAll(currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, ""), item => (long)item);  //.OfType<object>().Select(o => o.ToString()).ToArray();
-            currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, "").CopyTo(lngShapeIDs, 0);
-            return lngShapeIDs;
-        }
-        //Retrieve every shape object that is connected(glued) to currentShape      Connect-object
-        public boolean dangerflowInGateway(Visio.Shape currentShape)   
-        {
-            Visio.Connects connections = currentShape.FromConnects;
-            for(int i=1; i<connections.Count; i++)
+            var shapes = new List<Visio.Shape>();
+            Visio.Connects shapeConnections = currentShape.Connects;
+            foreach (Visio.Connect connection in shapeConnections)
             {
-                if (connections.Item(i).ObjectType==visObjTypeColor)
-                {
-                
-                }
+                shapes.Add(connection.ToSheet);  // https://docs.microsoft.com/de-de/office/vba/api/visio.connects
             }
+            return shapes;
         }
+
+        //public long[] getIncomingShapes1(Visio.Shape currentShape)       // https://docs.microsoft.com/de-de/office/vba/api/visio.shape.connectedshapes
+        //{
+        //    long[] lngShapeIDs;
+        //    int intCount;
+        //    Visio.VisConnectedShapesFlags test = Visio.VisConnectedShapesFlags.visConnectedShapesIncomingNodes;
+        //long[] test1 = currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, "") as long[];
+        //    lngShapeIDs = Array.ConvertAll(currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, ""), item => (long)item);  //.OfType<object>().Select(o => o.ToString()).ToArray();
+        //    currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, "").CopyTo(lngShapeIDs, 0);
+        //    return lngShapeIDs;
+        
+        
 
         #region Von VSTO generierter Code
 
