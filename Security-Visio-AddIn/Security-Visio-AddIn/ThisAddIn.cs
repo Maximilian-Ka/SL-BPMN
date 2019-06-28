@@ -105,6 +105,26 @@ namespace Security_Visio_AddIn
             }
         }
 
+        public void violationValidator(Visio.Shapes shapes)
+        {
+            var outgoingShapes = new List<Visio.Shape>();
+            foreach(Visio.Shape shape in shapes)
+            {
+                if(shape.Name == "Violation")
+                {
+                    outgoingShapes = getOutgoingShapes(shape);
+                    foreach(Visio.Shape element in outgoingShapes)
+                    {
+                        if(element.Name != "DangerFlow")
+                        {
+                            //Issue Handling
+                        }
+                    }
+                }
+                
+            }
+        }
+
         public List<Visio.Shape> getIncomingShapes(Visio.Shape currentShape)
         {
         var shapes = new List<Visio.Shape>();
