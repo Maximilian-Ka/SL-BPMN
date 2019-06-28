@@ -10,6 +10,12 @@ namespace Security_Visio_AddIn
 {
     public partial class ThisAddIn
     {
+        // TODO: Validator-Methoden in Validator-Klasse auslagern
+        // TODO: Weitere Ausnahmen behandeln.
+        // TODO: Issue Handling implementieren
+        // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
+            
+
         List<Visio.Shape> IssueList;
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
@@ -28,20 +34,7 @@ namespace Security_Visio_AddIn
             return vsoShapes;
 
         }
-        public String[] getShapeNames(Visio.Shapes shapes)         //https://docs.microsoft.com/de-de/office/vba/api/visio.shapes.item
-        {
-            Visio.Shapes vsoShapes = shapes;
-            int shapeCount = vsoShapes.Count;
-            string[] names = new string[shapeCount];
-            if(shapeCount > 0)
-            {
-                for(int i=1; i<shapeCount; i++)
-                {
-                    names[i - 1] = vsoShapes.get_ItemU(i).Name;
-                }
-            }
-            return names;
-        }
+
 
         //geht davon aus, dass sequence flows oder danger flows in das gateway führen
         public void gatewayValidator(Visio.Shapes shapes)
@@ -125,6 +118,39 @@ namespace Security_Visio_AddIn
             }
         }
 
+        public void surveillanceValidator(Visio.Shapes shapes)
+        {
+            var surveillanceShapes = new List<String>();
+            surveillanceShapes.Add("SecurityGuard");
+            surveillanceShapes.Add("CCTV");
+            surveillanceShapes.Add("");
+            foreach (Visio.Shape shape in shapes)
+            {
+                if(surveillanceShapes.Contains(shape.Name))
+                {
+                    if(shape.ContainingShape.Name == "Group")       //If the Shape object is the member of a group, the ContainingShape property returns that group.
+                    {
+                        //Prüfe, ob die Gruppe einen ausgehenden Message flow hat
+                        var outgoingFlows = new List<Visio.Shape>();
+                        outgoingFlows = getOutgoingShapes(shape);
+                        if(!outgoingFlows.Exists(x => x.Name == "MessageFlow")){
+                            //Issue Handling    Kein Message Flow an Surveillance-Gruppe
+                        }
+                        
+                    }
+                    else if (shape.ContainingShape.Name == "Pool")
+                    {
+                        //
+                    }
+                    else
+                    {
+                        //Issue Handling    Surveillance Shape als top-level shape verwendet
+                    }
+
+                }
+            }
+        }
+
         public List<Visio.Shape> getIncomingShapes(Visio.Shape currentShape)
         {
         var shapes = new List<Visio.Shape>();
@@ -146,6 +172,21 @@ namespace Security_Visio_AddIn
             return shapes;
         }
 
+        public String[] getShapeNames(Visio.Shapes shapes)         //https://docs.microsoft.com/de-de/office/vba/api/visio.shapes.item
+        {
+            Visio.Shapes vsoShapes = shapes;
+            int shapeCount = vsoShapes.Count;
+            string[] names = new string[shapeCount];
+            if (shapeCount > 0)
+            {
+                for (int i = 1; i < shapeCount; i++)
+                {
+                    names[i - 1] = vsoShapes.get_ItemU(i).Name;
+                }
+            }
+            return names;
+        }
+
         //public long[] getIncomingShapes1(Visio.Shape currentShape)       // https://docs.microsoft.com/de-de/office/vba/api/visio.shape.connectedshapes
         //{
         //    long[] lngShapeIDs;
@@ -155,8 +196,8 @@ namespace Security_Visio_AddIn
         //    lngShapeIDs = Array.ConvertAll(currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, ""), item => (long)item);  //.OfType<object>().Select(o => o.ToString()).ToArray();
         //    currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, "").CopyTo(lngShapeIDs, 0);
         //    return lngShapeIDs;
-        
-        
+
+
 
         #region Von VSTO generierter Code
 
