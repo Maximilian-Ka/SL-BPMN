@@ -73,14 +73,33 @@ namespace Security_Visio_AddIn
 
         public void inspectionValidator(Visio.Shapes shapes)
         {
-            var gluedShapesIDs = new List<long>();
+            var gluedShapesIDs = new List<int>();
+            int count = 0;
             foreach(Visio.Shape shape in shapes)
             {
                 if(shape.Name == "Inspektion")
                 {
                     Array glued2dShapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesIncoming2D, "");    // If the source object is a 2D shape, return the 2D shapes that are glued to this shape.
                     foreach(Object element in glued2dShapes){
-                        gluedShapesIDs.Add((long)element);
+                        gluedShapesIDs.Add((int)element);
+                    }
+                    if (!gluedShapesIDs.Any())  
+                    {
+                        //Issue Handling    Keine glued 2D Shapes vorhanden
+                    }
+                    else
+                    {
+                        foreach(int ID in gluedShapesIDs)
+                        {
+                            if (shapes.get_ItemFromID(ID).Name == "Violation")
+                            {
+                                count++;
+                            }
+                        }
+                        if (count== 0)
+                        {
+                            //Issue Handling    Keine "Violation"-Shape an das Inspection-Shape geklebt.
+                        }
                     }
                 }
             }
