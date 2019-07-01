@@ -16,17 +16,71 @@ namespace Security_Visio_AddIn
         // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
             
 
-        List<Visio.Shape> IssueList;
+        //List<Visio.Shape> IssueList;
+
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
             string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
             Visio.Document doc = this.Application.Documents.Open(docPath);
-            Visio.Page page = doc.Pages.get_ItemU(1);
+            Visio.Shapes vsoShapes = getShapesFromPage();
+            //int shapeCount = vsoShapes.Count;
+            //string[] names = new string[shapeCount];
+            //if (shapeCount > 0)
+            //{
+            //    for (int i = 1; i <= shapeCount; i++)
+            //    {
+            //        names[i - 1] = vsoShapes.get_ItemU(i).Master.NameU;
+            //        Console.WriteLine(names[i-1]);
+            //    }
+            //}
+            
+            gatewayValidator(vsoShapes, doc);
+            //Visio.Page page = doc.Pages.get_ItemU(1);
+            //Visio.Pages pages = doc.Pages;
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
         {
         }
+
+
+        public void insertRuleSet(Visio.Document document)
+        {
+            Visio.ValidationRuleSet gatewayValidatorRuleSet = document.Validation.RuleSets.Add("Gateway Validation");
+            gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
+
+            Visio.ValidationRule customRule1 = gatewayValidatorRuleSet.Rules.Add("distinctFlows2sequenceFlow");
+            customRule1.Category = "Gateway";
+            customRule1.Description = "Wenn ungleiche Sequenzflüsse zusammengeführt werden, muss der ausgehende Sequenzfluss DangerFlow sein";
+
+            Visio.ValidationRule customRule2 = gatewayValidatorRuleSet.Rules.Add("equalFlows2distinctFlow");
+            customRule2.Category = "Gateway";
+            customRule2.Description = "Eingehende Sequenzflüsse sind ungleich dem ausgehenden Sequenzfluss. Muss gleich sein.";
+            //
+            //
+            Visio.ValidationRuleSet inspectionValidatorRuleSet = document.Validation.RuleSets.Add("Inspection Validation");
+            inspectionValidatorRuleSet.Description = "Verify that the Inspection-Shapes are correctly used in the document.";
+
+            Visio.ValidationRule customRule3 = inspectionValidatorRuleSet.Rules.Add("glued2DshapesMissing");
+            customRule3.Category = "inspection-shape";
+            customRule3.Description = "Kein 2D-Shape an das Inspection-Shape geklebt.";
+
+            Visio.ValidationRule customRule4 = inspectionValidatorRuleSet.Rules.Add("gluedViolationEvent");
+            customRule4.Category = "inspection-shape";
+            customRule4.Description = "Kein Violation-Event an das Inspections-Shape geklebt.";
+            //
+            //Template
+            //Visio.ValidationRuleSet ****ValidatorRuleSet = document.Validation.RuleSets.Add("Name");
+            //*****ValidatorRuleSet.Description = "";
+            //Visio.ValidationRule customRule* = inspectionValidatorRuleSet.Rules.Add("");
+            //customRule*.Category = "";
+            //customRule*.Description = "";
+        }
+
+
+
+
+
         public Visio.Shapes getShapesFromPage()
         {
             Visio.Shapes vsoShapes;
@@ -34,31 +88,66 @@ namespace Security_Visio_AddIn
             return vsoShapes;
 
         }
-
-
         //geht davon aus, dass sequence flows oder danger flows in das gateway führen
-        public void gatewayValidator(Visio.Shapes shapes)
+        public void gatewayValidator(Visio.Shapes shapes, Visio.Document document)
         {
-            foreach(Visio.Shape shape in shapes)
+            Visio.ValidationRuleSet gatewayValidatorRuleSet = document.Validation.RuleSets.Add("Gateway Validation");
+            gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
+
+            Visio.ValidationRule customRule1 = gatewayValidatorRuleSet.Rules.Add("distinctFlows2sequenceFlow");
+            customRule1.Category = "Gateway";
+            customRule1.Description = "Wenn ungleiche Sequenzflüsse zusammengeführt werden, muss der ausgehende Sequenzfluss DangerFlow sein";
+
+            Visio.ValidationRule customRule2 = gatewayValidatorRuleSet.Rules.Add("equalFlows2distinctFlow");
+            customRule2.Category = "Gateway";
+            customRule2.Description = "Eingehende Sequenzflüsse sind ungleich dem ausgehenden Sequenzfluss. Muss gleich sein.";
+
+            Boolean mixedFlows = false;
+            var incomingShapes = new List<Visio.Shape>();
+            var outgoingShapes = new List<Visio.Shape>();
+
+            foreach (Visio.Shape shape in shapes)
             {
-                if(shape.Name == "Gateway")
+                if(shape.Master.NameU == "Gateway")
                 {
-                    List<Visio.Shape>flowShapes = getIncomingShapes(shape);
-                    String comparisonShape = flowShapes.ElementAt(0).Name;
-                    foreach(Visio.Shape flowShape in flowShapes)
+                    Array incoming1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesIncoming1D, "");
+                    Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                    foreach (Object element in incoming1Dshapes)
                     {
-                        if(flowShape.Name != comparisonShape)
-                        {   //Wenn ungleiche Sequenzflüsse zusammengeführt werden, muss der ausgehende Sequenzfluss DangerFlow sein.
-                            if (shape.Connects.get_Item16(0).ToSheet.Name != "DangerFlow")
+                        incomingShapes.Add(shapes.get_ItemFromID((int)element));
+                    }
+                    foreach (Object element in outgoing1Dshapes)
+                    {
+                        outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+                    }
+
+                    String comparisonShape = incomingShapes.First().Name;
+                    foreach (Visio.Shape current in incomingShapes)
+                    {
+                        if(current.Master.NameU != comparisonShape)
+                        {   //Wenn ungleiche Sequenzflüsse zusammengeführt werden, müssen ausgehende Sequenzflüsse DangerFlows sein.
+                            mixedFlows = true;
+                            foreach(Visio.Shape x in outgoingShapes)
                             {
-                                //Issue Handling
+                                if(x.Master.Name != "DangerFlow")
+                                {
+                                    customRule1.AddIssue(x.ContainingPage, x);
+                                }
                             }
+                            break;                           
                         }
                     }
-                    //Alle eingehenden Sequenzflüsse sind gleich, aber der ausgehende Sequenzfluss ist ungleich.
-                    if(comparisonShape != shape.Connects.get_Item16(0).ToSheet.Name)
+
+                    //Alle eingehenden Sequenzflüsse sind gleich, aber mindestens ein ausgehender Sequenzfluss ist ungleich.
+                    if(mixedFlows == false)
                     {
-                        //Issue Handling
+                        foreach(Visio.Shape element in outgoingShapes)
+                        {
+                            if(element.Master.NameU != comparisonShape)
+                            {
+                                customRule2.AddIssue(element.ContainingPage, element);
+                            }
+                        }
                     }
                 }
             }
