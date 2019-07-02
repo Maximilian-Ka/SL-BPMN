@@ -91,6 +91,7 @@ namespace Security_Visio_AddIn
         //geht davon aus, dass sequence flows oder danger flows in das gateway führen
         public void gatewayValidator(Visio.Shapes shapes, Visio.Document document)
         {
+            //Insert rule set
             Visio.ValidationRuleSet gatewayValidatorRuleSet = document.Validation.RuleSets.Add("Gateway Validation");
             gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
 
@@ -131,13 +132,13 @@ namespace Security_Visio_AddIn
                             {
                                 if(x.Master.Name != "DangerFlow")
                                 {
-                                    customRule1.AddIssue(x.ContainingPage, x);
+                                    Visio.ValidationIssue vsoValidationIssue = customRule1.AddIssue(x.ContainingPage, x);
+                                    vsoValidationIssue.Ignored = false;
                                 }
                             }
                             break;                           
                         }
                     }
-
                     //Alle eingehenden Sequenzflüsse sind gleich, aber mindestens ein ausgehender Sequenzfluss ist ungleich.
                     if(mixedFlows == false)
                     {
@@ -153,34 +154,47 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void inspectionValidator(Visio.Shapes shapes)
+        public void inspectionValidator(Visio.Shapes shapes, Visio.Document document)
         {
+            // TODO: Add issue for missing sequence flow
+            //Insert rule set
+            Visio.ValidationRuleSet inspectionValidatorRuleSet = document.Validation.RuleSets.Add("Inspection Validation");
+            inspectionValidatorRuleSet.Description = "Verify that the Inspection-Shapes are correctly used in the document.";
+
+            Visio.ValidationRule customRule3 = inspectionValidatorRuleSet.Rules.Add("glued2DshapesMissing");
+            customRule3.Category = "inspection-shape";
+            customRule3.Description = "Kein 2D-Shape an das Inspection-Shape geklebt.";
+
+            Visio.ValidationRule customRule4 = inspectionValidatorRuleSet.Rules.Add("gluedViolationEvent");
+            customRule4.Category = "inspection-shape";
+            customRule4.Description = "Kein Violation-Event an das Inspections-Shape geklebt.";
+
             var gluedShapesIDs = new List<int>();
             int count = 0;
             foreach(Visio.Shape shape in shapes)
             {
-                if(shape.Name == "Inspektion")
+                if(shape.Master.NameU == "Inspektion")
                 {
-                    Array glued2dShapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesIncoming2D, "");    // If the source object is a 2D shape, return the 2D shapes that are glued to this shape.
-                    foreach(Object element in glued2dShapes){
+                    Array glued2Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, ""); 
+                    foreach(Object element in glued2Dshapes){
                         gluedShapesIDs.Add((int)element);
                     }
                     if (!gluedShapesIDs.Any())  
                     {
-                        //Issue Handling    Keine glued 2D Shapes vorhanden
+                        customRule3.AddIssue(shape.ContainingPage, shape); //Issue Handling    Keine glued 2D Shapes vorhanden
                     }
                     else
                     {
-                        foreach(int ID in gluedShapesIDs)
+                        foreach(int id in gluedShapesIDs)
                         {
-                            if (shapes.get_ItemFromID(ID).Name == "Violation")
+                            if (shapes.get_ItemFromID(id).Master.Name == "Violation")
                             {
                                 count++;
                             }
                         }
                         if (count== 0)
                         {
-                            //Issue Handling    Keine "Violation"-Shape an das Inspection-Shape geklebt.
+                            customRule4.AddIssue(shape.ContainingPage, shape); //Issue Handling    Keine "Violation"-Shape an das Inspection-Shape geklebt.
                         }
                     }
                 }
@@ -194,10 +208,14 @@ namespace Security_Visio_AddIn
             {
                 if(shape.Name == "Violation")
                 {
-                    outgoingShapes = getOutgoingShapes(shape);
+                    Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                    foreach (Object element in outgoing1Dshapes)
+                    {
+                        outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+                    }
                     foreach(Visio.Shape element in outgoingShapes)
                     {
-                        if(element.Name != "DangerFlow")
+                        if(element.Master.Name != "DangerFlow")
                         {
                             //Issue Handling
                         }
@@ -212,7 +230,8 @@ namespace Security_Visio_AddIn
             var surveillanceShapes = new List<String>();
             surveillanceShapes.Add("SecurityGuard");
             surveillanceShapes.Add("CCTV");
-            surveillanceShapes.Add("");
+            surveillanceShapes.Add("PerimeterBarrier");
+            surveillanceShapes.Add("AlarmSystem");
             foreach (Visio.Shape shape in shapes)
             {
                 if(surveillanceShapes.Contains(shape.Name))
