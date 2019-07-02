@@ -23,24 +23,19 @@ namespace Security_Visio_AddIn
             string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
             Visio.Document doc = this.Application.Documents.Open(docPath);
             Visio.Shapes vsoShapes = getShapesFromPage();
-            //int shapeCount = vsoShapes.Count;
-            //string[] names = new string[shapeCount];
-            //if (shapeCount > 0)
-            //{
-            //    for (int i = 1; i <= shapeCount; i++)
-            //    {
-            //        names[i - 1] = vsoShapes.get_ItemU(i).Master.NameU;
-            //        Console.WriteLine(names[i-1]);
-            //    }
-            //}
-            
-            gatewayValidator(vsoShapes, doc);
-            //Visio.Page page = doc.Pages.get_ItemU(1);
-            //Visio.Pages pages = doc.Pages;
+            Visio.ValidationRuleSet gatewayValidatorRuleSet = doc.Validation.RuleSets.Add("Gateway Validation");
+            gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
+
+            Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleGatewayValidatedEvent);          
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
         {
+        }
+
+        void HandleGatewayValidatedEvent(Visio.ValidationRuleSet RuleSet)
+        {
+            gatewayValidator(getShapesFromPage(), getActiveDocument());
         }
 
 
@@ -79,7 +74,11 @@ namespace Security_Visio_AddIn
 
 
 
-
+        public Visio.Document getActiveDocument()
+        {
+            Visio.Document doc = Application.ActiveDocument;
+            return doc;
+        }
 
         public Visio.Shapes getShapesFromPage()
         {
@@ -182,6 +181,7 @@ namespace Security_Visio_AddIn
                     if (!gluedShapesIDs.Any())  
                     {
                         customRule3.AddIssue(shape.ContainingPage, shape); //Issue Handling    Keine glued 2D Shapes vorhanden
+                        break;
                     }
                     else
                     {
