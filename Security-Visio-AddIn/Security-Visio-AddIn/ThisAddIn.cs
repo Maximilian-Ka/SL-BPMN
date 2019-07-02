@@ -26,16 +26,32 @@ namespace Security_Visio_AddIn
             Visio.ValidationRuleSet gatewayValidatorRuleSet = doc.Validation.RuleSets.Add("Gateway Validation");
             gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
 
-            Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleGatewayValidatedEvent);          
+            Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);          
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
         {
         }
 
-        void HandleGatewayValidatedEvent(Visio.ValidationRuleSet RuleSet)
+        void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
         {
-            gatewayValidator(getShapesFromPage(), getActiveDocument());
+            if (RuleSet.Name == "Gateway Validator")
+            {
+                gatewayValidator(getShapesFromPage(), getActiveDocument());
+            }
+            if (RuleSet.Name == "Inspection Validator")
+            {
+                inspectionValidator(getShapesFromPage(), getActiveDocument());
+            }
+            if (RuleSet.Name == "Violation Validator")
+            {
+                violationValidator(getShapesFromPage(), getActiveDocument());
+            }
+            if (RuleSet.Name == "Surveillance Validator")
+            {
+                surveillanceValidator(getShapesFromPage(), getActiveDocument());
+            }
+
         }
 
 
@@ -87,7 +103,7 @@ namespace Security_Visio_AddIn
             return vsoShapes;
 
         }
-        //geht davon aus, dass sequence flows oder danger flows in das gateway führen
+        //TODO: Raise issue when there are no incoming and/or outgoing flows.
         public void gatewayValidator(Visio.Shapes shapes, Visio.Document document)
         {
             //Insert rule set
@@ -201,7 +217,7 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void violationValidator(Visio.Shapes shapes)
+        public void violationValidator(Visio.Shapes shapes, Visio.Document document)
         {
             var outgoingShapes = new List<Visio.Shape>();
             foreach(Visio.Shape shape in shapes)
@@ -225,7 +241,7 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void surveillanceValidator(Visio.Shapes shapes)
+        public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document)
         {
             var surveillanceShapes = new List<String>();
             surveillanceShapes.Add("SecurityGuard");
@@ -295,15 +311,6 @@ namespace Security_Visio_AddIn
             return names;
         }
 
-        //public long[] getIncomingShapes1(Visio.Shape currentShape)       // https://docs.microsoft.com/de-de/office/vba/api/visio.shape.connectedshapes
-        //{
-        //    long[] lngShapeIDs;
-        //    int intCount;
-        //    Visio.VisConnectedShapesFlags test = Visio.VisConnectedShapesFlags.visConnectedShapesIncomingNodes;
-        //long[] test1 = currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, "") as long[];
-        //    lngShapeIDs = Array.ConvertAll(currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, ""), item => (long)item);  //.OfType<object>().Select(o => o.ToString()).ToArray();
-        //    currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, "").CopyTo(lngShapeIDs, 0);
-        //    return lngShapeIDs;
 
 
 
