@@ -108,11 +108,11 @@ namespace Security_Visio_AddIn
 
             Visio.ValidationRule customRule1 = gatewayValidatorRuleSet.Rules.Add("distinctFlows2sequenceFlow");
             customRule1.Category = "Gateway";
-            customRule1.Description = "Wenn ungleiche Sequenzflüsse zusammengeführt werden, muss der ausgehende Sequenzfluss DangerFlow sein";
+            customRule1.Description = "A DangerFlow and a regular SequenceFlow can only be combined in a gateway, if the resulting flow is a DangerFlow";
 
             Visio.ValidationRule customRule2 = gatewayValidatorRuleSet.Rules.Add("equalFlows2distinctFlow");
             customRule2.Category = "Gateway";
-            customRule2.Description = "Eingehende Sequenzflüsse sind ungleich dem ausgehenden Sequenzfluss. Muss gleich sein.";
+            customRule2.Description = "If incoming flows to a gateway are all of the same type, the outgoing flow must be of that same type";
 
             Boolean mixedFlows = false;
             var incomingShapes = new List<Visio.Shape>();
@@ -168,17 +168,17 @@ namespace Security_Visio_AddIn
         public void inspectionValidator(Visio.Shapes shapes, Visio.Document document)
         {
             // TODO: Add issue for missing sequence flow
-            //Insert rule set
+            //Rule set
             Visio.ValidationRuleSet inspectionValidatorRuleSet = document.Validation.RuleSets.Add("Inspection Validation");
             inspectionValidatorRuleSet.Description = "Verify that the Inspection-Shapes are correctly used in the document.";
 
             Visio.ValidationRule customRule3 = inspectionValidatorRuleSet.Rules.Add("glued2DshapesMissing");
             customRule3.Category = "inspection-shape";
-            customRule3.Description = "Kein 2D-Shape an das Inspection-Shape geklebt.";
+            customRule3.Description = "As each Inspection differentiates between secure and unsecure, a Violation event needs to be glued to a Inspection task, to represent the start of a DangerFlow";
 
             Visio.ValidationRule customRule4 = inspectionValidatorRuleSet.Rules.Add("gluedViolationEvent");
             customRule4.Category = "inspection-shape";
-            customRule4.Description = "Kein Violation-Event an das Inspections-Shape geklebt.";
+            customRule4.Description = "As each Inspection differentiates between secure and unsecure, a Violation event needs to be glued to a Inspection task, to represent the start of a DangerFlow";
 
             var gluedShapesIDs = new List<int>();
             int count = 0;
@@ -215,6 +215,14 @@ namespace Security_Visio_AddIn
 
         public void violationValidator(Visio.Shapes shapes, Visio.Document document)
         {
+            //Ruleset 
+            Visio.ValidationRuleSet violationValidatorRuleSet = document.Validation.RuleSets.Add("Violation Validation");
+            violationValidatorRuleSet.Description = "Verify that the Violation events are correctly used in the document.";
+
+            Visio.ValidationRule customRule1 = violationValidatorRuleSet.Rules.Add("noOutgoingDangerFlow");
+            customRule1.Category = "Violation Event";
+            customRule1.Description = "The outgoing flow of an Violation event has to be a DangerFlow";
+
             var outgoingShapes = new List<Visio.Shape>();
             foreach(Visio.Shape shape in shapes)
             {
@@ -230,6 +238,7 @@ namespace Security_Visio_AddIn
                         if(element.Master.Name != "DangerFlow")
                         {
                             //Issue Handling
+                            customRule1.AddIssue(shape.ContainingPage, element);
                         }
                     }
                 }
@@ -237,9 +246,24 @@ namespace Security_Visio_AddIn
             }
         }
 
+
         public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document)
         {
+            //Ruleset
+            Visio.ValidationRuleSet surveillanceValidatorRuleSet = document.Validation.RuleSets.Add("Surveillance Validation");
+            surveillanceValidatorRuleSet.Description = "Verify that the Surveillance elements are correctly used in the document.";
+
+            Visio.ValidationRule customRule1 = surveillanceValidatorRuleSet.Rules.Add("notAccociated");
+            customRule1.Category = "Surveillance Element";
+            customRule1.Description = "An Surveillance element has to be associated with a container object (Pool/Lane/Group)";
+
+            Visio.ValidationRule customRule2 = surveillanceValidatorRuleSet.Rules.Add("noOutgoingMsg");
+            customRule2.Category = "Surveillance Element";
+            customRule2.Description = "The Container Object (Pool/Lane/Group) associated with an Surveillance element has to have an outgoing MessageFlow";
+
+            //Validator
             var surveillanceShapes = new List<String>();
+            var containerShapes = new List<Visio.Shape>();
             surveillanceShapes.Add("SecurityGuard");
             surveillanceShapes.Add("CCTV");
             surveillanceShapes.Add("PerimeterBarrier");
@@ -248,25 +272,42 @@ namespace Security_Visio_AddIn
             {
                 if(surveillanceShapes.Contains(shape.Name))
                 {
-                    if(shape.ContainingShape.Name == "Group")       //If the Shape object is the member of a group, the ContainingShape property returns that group.
-                    {
-                        //Prüfe, ob die Gruppe einen ausgehenden Message flow hat
-                        var outgoingFlows = new List<Visio.Shape>();
-                        outgoingFlows = getOutgoingShapes(shape);
-                        if(!outgoingFlows.Exists(x => x.Name == "MessageFlow")){
-                            //Issue Handling    Kein Message Flow an Surveillance-Gruppe
+                    //TODO ContainingShape.Name fehlerhaft
+                    //Prüft ob dem Shape ein Container zugeordnet ist, wenn nicht: Verstoß gegen Modellierungsregel 1
+                    if(shape.MemberOfContainer() == null){
+                        customRule1.AddIssue(shape.ContainingPage, element);
+                    }
+                    else{
+                        //Holt alle Container Objekte in denen das aktuelle Shape liegt; Fügt sie der Liste containerIDs hinzu
+                        Array containerIDs = shape.MemberOfContainers();
+                        foreach(Object element in containerIDs){
+                            containerShapes.Add(shapes.get_ItemFromID((int)element));
                         }
-                        
-                    }
-                    else if (shape.ContainingShape.Name == "Pool")
-                    {
-                        //
-                    }
-                    else
-                    {
-                        //Issue Handling    Surveillance Shape als top-level shape verwendet
-                    }
 
+                        foreach(Visio.Shape container in containerShapes){
+                            if(container.Name == "Group"){
+                                
+                            }
+                        }          
+
+                        if(shape.ContainingShape.Name == "Group"){       //If the Shape object is the member of a group, the ContainingShape property returns that group.
+                            //Prüfe, ob die Gruppe einen ausgehenden Message flow hat
+                            var outgoingFlows = new List<Visio.Shape>();
+                            outgoingFlows = getOutgoingShapes(shape);
+                            if(!outgoingFlows.Exists(x => x.Name == "MessageFlow")){
+                                //Issue Handling    Kein Message Flow an Surveillance-Gruppe
+
+                            }
+                        
+                        }
+                        else if (shape.ContainingShape.Name == "Pool"){
+                    
+                            //
+                        }
+                        else{
+                            //Issue Handling    Surveillance Shape als top-level shape verwendet
+                        }
+                    }
                 }
             }
         }
