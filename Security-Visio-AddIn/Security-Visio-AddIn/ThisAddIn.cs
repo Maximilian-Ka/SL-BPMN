@@ -14,10 +14,6 @@ namespace Security_Visio_AddIn
         // TODO: Weitere Ausnahmen behandeln.
         // TODO: Issue Handling implementieren
         // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
-            
-
-        //List<Visio.Shape> IssueList;
-
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
             string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
@@ -25,7 +21,6 @@ namespace Security_Visio_AddIn
             Visio.Shapes vsoShapes = getShapesFromPage();
             Visio.ValidationRuleSet gatewayValidatorRuleSet = doc.Validation.RuleSets.Add("Gateway Validation");
             gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
-
             Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);          
         }
 
@@ -35,22 +30,23 @@ namespace Security_Visio_AddIn
 
         void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
         {
-            if (RuleSet.Name == "Gateway Validator")
-            {
-                gatewayValidator(getShapesFromPage(), getActiveDocument());
-            }
-            if (RuleSet.Name == "Inspection Validator")
-            {
-                inspectionValidator(getShapesFromPage(), getActiveDocument());
-            }
-            if (RuleSet.Name == "Violation Validator")
-            {
-                violationValidator(getShapesFromPage(), getActiveDocument());
-            }
-            if (RuleSet.Name == "Surveillance Validator")
-            {
-                surveillanceValidator(getShapesFromPage(), getActiveDocument());
-            }
+            gatewayValidator(getShapesFromPage(), getActiveDocument());
+            //if (RuleSet.Name == "Gateway Validation")
+            //{
+            //    gatewayValidator(getShapesFromPage(), getActiveDocument());
+            //}
+            //if (RuleSet.Name == "Inspection Validation")
+            //{
+            //    inspectionValidator(getShapesFromPage(), getActiveDocument());
+            //}
+            //if (RuleSet.Name == "Violation Validation")
+            //{
+            //    violationValidator(getShapesFromPage(), getActiveDocument());
+            //}
+            //if (RuleSet.Name == "Surveillance Validation")
+            //{
+            //    surveillanceValidator(getShapesFromPage(), getActiveDocument());
+            //}
 
         }
 
@@ -188,7 +184,7 @@ namespace Security_Visio_AddIn
             int count = 0;
             foreach(Visio.Shape shape in shapes)
             {
-                if(shape.Master.NameU == "Inspektion")
+                if(shape.Master.NameU == "Inspection")
                 {
                     Array glued2Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, ""); 
                     foreach(Object element in glued2Dshapes){
