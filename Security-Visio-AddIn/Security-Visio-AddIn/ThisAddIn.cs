@@ -21,6 +21,8 @@ namespace Security_Visio_AddIn
             Visio.Shapes vsoShapes = getShapesFromPage();
             Visio.ValidationRuleSet gatewayValidatorRuleSet = doc.Validation.RuleSets.Add("Gateway Validation");
             gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
+            Visio.ValidationRuleSet surveillanceValidatorRuleSet = doc.Validation.RuleSets.Add("Surveillance Validation");
+            surveillanceValidatorRuleSet.Description = "Verify that the Surveillance elements are correctly used in the document.";
             Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);          
         }
 
@@ -30,24 +32,27 @@ namespace Security_Visio_AddIn
 
         void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
         {
-            gatewayValidator(getShapesFromPage(), getActiveDocument());
-            //if (RuleSet.Name == "Gateway Validation")
-            //{
-            //    gatewayValidator(getShapesFromPage(), getActiveDocument());
-            //}
-            //if (RuleSet.Name == "Inspection Validation")
-            //{
-            //    inspectionValidator(getShapesFromPage(), getActiveDocument());
-            //}
-            //if (RuleSet.Name == "Violation Validation")
-            //{
-            //    violationValidator(getShapesFromPage(), getActiveDocument());
-            //}
-            //if (RuleSet.Name == "Surveillance Validation")
-            //{
-            //    surveillanceValidator(getShapesFromPage(), getActiveDocument());
-            //}
-
+            //gatewayValidator(getShapesFromPage(), getActiveDocument());
+            if (RuleSet.Name == "Gateway Validation")
+            {
+                gatewayValidator(getShapesFromPage(), getActiveDocument());
+                return;
+            }
+            if (RuleSet.Name == "Inspection Validation")
+            {
+                inspectionValidator(getShapesFromPage(), getActiveDocument());
+                return;
+            }
+            if (RuleSet.Name == "Violation Validation")
+            {
+                violationValidator(getShapesFromPage(), getActiveDocument());
+                return;
+            }
+            if (RuleSet.Name == "Surveillance Validation")
+            {
+                surveillanceValidator(getShapesFromPage(), getActiveDocument());
+                return;
+            }
         }
 
 
@@ -268,69 +273,64 @@ namespace Security_Visio_AddIn
             surveillanceShapes.Add("CCTV");
             surveillanceShapes.Add("PerimeterBarrier");
             surveillanceShapes.Add("AlarmSystem");
+            Boolean inGroup = false;
             foreach (Visio.Shape shape in shapes)
             {
-                if(surveillanceShapes.Contains(shape.Name))
+                if(surveillanceShapes.Contains(shape.Master.Name))
                 {
-                    //TODO ContainingShape.Name fehlerhaft
+                    //TODO Prüfe, ob outgoing1Dflows MessageFlows sind.
                     //Prüft ob dem Shape ein Container zugeordnet ist, wenn nicht: Verstoß gegen Modellierungsregel 1
-                    if(shape.MemberOfContainer() == null){
-                        customRule1.AddIssue(shape.ContainingPage, element);
+                    if(shape.MemberOfContainers == null){
+                        customRule1.AddIssue(shape.ContainingPage, shape);
                     }
                     else{
                         //Holt alle Container Objekte in denen das aktuelle Shape liegt; Fügt sie der Liste containerIDs hinzu
-                        Array containerIDs = shape.MemberOfContainers();
+                        Array containerIDs = shape.MemberOfContainers;
                         foreach(Object element in containerIDs){
                             containerShapes.Add(shapes.get_ItemFromID((int)element));
                         }
 
                         foreach(Visio.Shape container in containerShapes){
-                            if(container.Name == "Group"){
-                                
+                            if(container.Master.NameU == "Group"){
+                                var outgoingShapes = new List<Visio.Shape>();
+                                Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                                foreach (Object element in outgoing1Dshapes)
+                                {
+                                    outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+                                }
+                                if (!outgoingShapes.Any())
+                                {
+                                    //Issue  Kein outgoing Message Flow an dem überwachten Group-Shape
+                                    
+                                }
+                                inGroup = true;
+                                break;
                             }
-                        }          
+                        }
+                        //Surveillance Shape in einer Lane/in einem Pool.
+                        if (inGroup == false)
+                        {
+                            foreach (Visio.Shape container in containerShapes)
+                            {
+                                if (container.Master.NameU == "Swimlane List")
+                                {
+                                    var outgoingShapes = new List<Visio.Shape>();
+                                    Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                                    foreach (Object element in outgoing1Dshapes)
+                                    {
+                                        outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+                                    }
+                                    if (!outgoingShapes.Any())
+                                    {
+                                        //Issue  Kein outgoing Message Flow an dem überwachten Lane-Shape
 
-                        if(shape.ContainingShape.Name == "Group"){       //If the Shape object is the member of a group, the ContainingShape property returns that group.
-                            //Prüfe, ob die Gruppe einen ausgehenden Message flow hat
-                            var outgoingFlows = new List<Visio.Shape>();
-                            outgoingFlows = getOutgoingShapes(shape);
-                            if(!outgoingFlows.Exists(x => x.Name == "MessageFlow")){
-                                //Issue Handling    Kein Message Flow an Surveillance-Gruppe
-
+                                    }
+                                }
                             }
-                        
-                        }
-                        else if (shape.ContainingShape.Name == "Pool"){
-                    
-                            //
-                        }
-                        else{
-                            //Issue Handling    Surveillance Shape als top-level shape verwendet
                         }
                     }
                 }
             }
-        }
-
-        public List<Visio.Shape> getIncomingShapes(Visio.Shape currentShape)
-        {
-        var shapes = new List<Visio.Shape>();
-        Visio.Connects shapeFromConnections = currentShape.FromConnects;
-        foreach(Visio.Connect connection in shapeFromConnections)
-            {
-            shapes.Add(connection.FromSheet);  // https://docs.microsoft.com/de-de/office/vba/api/visio.connects
-            }
-        return shapes;
-        }
-        public List<Visio.Shape> getOutgoingShapes(Visio.Shape currentShape)
-        {
-            var shapes = new List<Visio.Shape>();
-            Visio.Connects shapeConnections = currentShape.Connects;
-            foreach (Visio.Connect connection in shapeConnections)
-            {
-                shapes.Add(connection.ToSheet);  // https://docs.microsoft.com/de-de/office/vba/api/visio.connects
-            }
-            return shapes;
         }
 
         public String[] getShapeNames(Visio.Shapes shapes)         //https://docs.microsoft.com/de-de/office/vba/api/visio.shapes.item
