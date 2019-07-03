@@ -14,33 +14,40 @@ namespace Security_Visio_AddIn
         // TODO: Weitere Ausnahmen behandeln.
         // TODO: Issue Handling implementieren
         // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
-            
-
-        //List<Visio.Shape> IssueList;
-
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
             string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
             Visio.Document doc = this.Application.Documents.Open(docPath);
             Visio.Shapes vsoShapes = getShapesFromPage();
-            //int shapeCount = vsoShapes.Count;
-            //string[] names = new string[shapeCount];
-            //if (shapeCount > 0)
-            //{
-            //    for (int i = 1; i <= shapeCount; i++)
-            //    {
-            //        names[i - 1] = vsoShapes.get_ItemU(i).Master.NameU;
-            //        Console.WriteLine(names[i-1]);
-            //    }
-            //}
-            
-            gatewayValidator(vsoShapes, doc);
-            //Visio.Page page = doc.Pages.get_ItemU(1);
-            //Visio.Pages pages = doc.Pages;
+            Visio.ValidationRuleSet gatewayValidatorRuleSet = doc.Validation.RuleSets.Add("Gateway Validation");
+            gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
+            Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);          
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
         {
+        }
+
+        void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
+        {
+            gatewayValidator(getShapesFromPage(), getActiveDocument());
+            //if (RuleSet.Name == "Gateway Validation")
+            //{
+            //    gatewayValidator(getShapesFromPage(), getActiveDocument());
+            //}
+            //if (RuleSet.Name == "Inspection Validation")
+            //{
+            //    inspectionValidator(getShapesFromPage(), getActiveDocument());
+            //}
+            //if (RuleSet.Name == "Violation Validation")
+            //{
+            //    violationValidator(getShapesFromPage(), getActiveDocument());
+            //}
+            //if (RuleSet.Name == "Surveillance Validation")
+            //{
+            //    surveillanceValidator(getShapesFromPage(), getActiveDocument());
+            //}
+
         }
 
 
@@ -79,7 +86,11 @@ namespace Security_Visio_AddIn
 
 
 
-
+        public Visio.Document getActiveDocument()
+        {
+            Visio.Document doc = Application.ActiveDocument;
+            return doc;
+        }
 
         public Visio.Shapes getShapesFromPage()
         {
@@ -88,7 +99,7 @@ namespace Security_Visio_AddIn
             return vsoShapes;
 
         }
-        //geht davon aus, dass sequence flows oder danger flows in das gateway führen
+        //TODO: Raise issue when there are no incoming and/or outgoing flows.
         public void gatewayValidator(Visio.Shapes shapes, Visio.Document document)
         {
             //Insert rule set
@@ -173,7 +184,7 @@ namespace Security_Visio_AddIn
             int count = 0;
             foreach(Visio.Shape shape in shapes)
             {
-                if(shape.Master.NameU == "Inspektion")
+                if(shape.Master.NameU == "Inspection")
                 {
                     Array glued2Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, ""); 
                     foreach(Object element in glued2Dshapes){
@@ -182,6 +193,7 @@ namespace Security_Visio_AddIn
                     if (!gluedShapesIDs.Any())  
                     {
                         customRule3.AddIssue(shape.ContainingPage, shape); //Issue Handling    Keine glued 2D Shapes vorhanden
+                        break;
                     }
                     else
                     {
@@ -201,7 +213,7 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void violationValidator(Visio.Shapes shapes)
+        public void violationValidator(Visio.Shapes shapes, Visio.Document document)
         {
             //Ruleset 
             Visio.ValidationRuleSet violationValidatorRuleSet = document.Validation.RuleSets.Add("Violation Validation");
@@ -234,8 +246,8 @@ namespace Security_Visio_AddIn
             }
         }
 
-        //TODO Regel-Logik überarbeiten: MsgFlow auch bei Pool und Lane Objekten relevant
-        public void surveillanceValidator(Visio.Shapes shapes)
+
+        public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document)
         {
             //Ruleset
             Visio.ValidationRuleSet surveillanceValidatorRuleSet = document.Validation.RuleSets.Add("Surveillance Validation");
@@ -336,15 +348,6 @@ namespace Security_Visio_AddIn
             return names;
         }
 
-        //public long[] getIncomingShapes1(Visio.Shape currentShape)       // https://docs.microsoft.com/de-de/office/vba/api/visio.shape.connectedshapes
-        //{
-        //    long[] lngShapeIDs;
-        //    int intCount;
-        //    Visio.VisConnectedShapesFlags test = Visio.VisConnectedShapesFlags.visConnectedShapesIncomingNodes;
-        //long[] test1 = currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, "") as long[];
-        //    lngShapeIDs = Array.ConvertAll(currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, ""), item => (long)item);  //.OfType<object>().Select(o => o.ToString()).ToArray();
-        //    currentShape.ConnectedShapes(Visio.VisConnectedShapesFlags.visConnectedShapesAllNodes, "").CopyTo(lngShapeIDs, 0);
-        //    return lngShapeIDs;
 
 
 
