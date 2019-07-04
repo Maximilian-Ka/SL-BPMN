@@ -267,7 +267,7 @@ namespace Security_Visio_AddIn
             customRule2.Category = "Surveillance Element";
             customRule2.Description = "The Group-Object associated with an Surveillance element has to have an outgoing MessageFlow";
 
-            Visio.ValidationRule customRule3 = surveillanceValidatorRuleSet.Rules.Add("noOutMsgPool);
+            Visio.ValidationRule customRule3 = surveillanceValidatorRuleSet.Rules.Add("noOutMsgPool");
             customRule3.Category = "Surveillance Element";
             customRule3.Description = "The Pool/Lane-Object associated with an Surveillance element has to have an outgoing MessageFlow";
 
