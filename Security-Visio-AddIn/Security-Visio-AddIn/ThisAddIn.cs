@@ -104,6 +104,7 @@ namespace Security_Visio_AddIn
             return vsoShapes;
 
         }
+
         //TODO: Raise issue when there are no incoming and/or outgoing flows.
         public void gatewayValidator(Visio.Shapes shapes, Visio.Document document)
         {
@@ -262,9 +263,13 @@ namespace Security_Visio_AddIn
             customRule1.Category = "Surveillance Element";
             customRule1.Description = "An Surveillance element has to be associated with a container object (Pool/Lane/Group)";
 
-            Visio.ValidationRule customRule2 = surveillanceValidatorRuleSet.Rules.Add("noOutgoingMsg");
+            Visio.ValidationRule customRule2 = surveillanceValidatorRuleSet.Rules.Add("noOutMsgGroup");
             customRule2.Category = "Surveillance Element";
-            customRule2.Description = "The Container Object (Pool/Lane/Group) associated with an Surveillance element has to have an outgoing MessageFlow";
+            customRule2.Description = "The Group-Object associated with an Surveillance element has to have an outgoing MessageFlow";
+
+            Visio.ValidationRule customRule3 = surveillanceValidatorRuleSet.Rules.Add("noOutMsgPool);
+            customRule3.Category = "Surveillance Element";
+            customRule3.Description = "The Pool/Lane-Object associated with an Surveillance element has to have an outgoing MessageFlow";
 
             //Validator
             var surveillanceShapes = new List<String>();
@@ -301,7 +306,7 @@ namespace Security_Visio_AddIn
                                 if (!outgoingShapes.Any())
                                 {
                                     //Issue  Kein outgoing Message Flow an dem überwachten Group-Shape
-                                    
+                                    customRule2.AddIssue(shape.ContainingPage, shape);
                                 }
                                 inGroup = true;
                                 break;
@@ -323,7 +328,7 @@ namespace Security_Visio_AddIn
                                     if (!outgoingShapes.Any())
                                     {
                                         //Issue  Kein outgoing Message Flow an dem überwachten Lane-Shape
-
+                                        customRule3.AddIssue(shape.ContainingPage, shape);
                                     }
                                 }
                             }
