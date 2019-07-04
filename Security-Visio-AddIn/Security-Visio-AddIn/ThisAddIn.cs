@@ -23,7 +23,18 @@ namespace Security_Visio_AddIn
             gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
             Visio.ValidationRuleSet surveillanceValidatorRuleSet = doc.Validation.RuleSets.Add("Surveillance Validation");
             surveillanceValidatorRuleSet.Description = "Verify that the Surveillance elements are correctly used in the document.";
-            Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);          
+            Visio.ValidationRuleSet inspectionValidatorRuleSet = doc.Validation.RuleSets.Add("Inspection Validation");
+            inspectionValidatorRuleSet.Description = "Verify that the Inspection-Shapes are correctly used in the document.";
+            Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
+            //var incomingShapes = new List<String>();
+            //foreach(Visio.Shape test in vsoShapes)
+            //{
+            //    incomingShapes.Add(test.Master.NameU);
+            //}
+            //foreach(Visio.Shape test in vsoShapes)
+            //{
+             //   test.ReplaceShape(doc.Masters.get_ItemU("DangerFlow"), 0);
+            //}
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
@@ -148,8 +159,8 @@ namespace Security_Visio_AddIn
                             {
                                 if(x.Master.Name != "DangerFlow")
                                 {
-                                    Visio.ValidationIssue vsoValidationIssue = customRule1.AddIssue(x.ContainingPage, x);
-                                    vsoValidationIssue.Ignored = false;
+                                    customRule1.AddIssue(x.ContainingPage, x);
+                                    
                                 }
                             }
                             break;                           
@@ -189,8 +200,12 @@ namespace Security_Visio_AddIn
             int count = 0;
             foreach(Visio.Shape shape in shapes)
             {
-                if(shape.Master.NameU == "Inspection")
+                if(shape.Master.Name == "Inspection")
                 {
+                    if(shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "").Length != 1)
+                    {
+                        //Issue Handling    Muss genau einen outgoing Sequenzfluss haben.
+                    }
                     Array glued2Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, ""); 
                     foreach(Object element in glued2Dshapes){
                         gluedShapesIDs.Add((int)element);
@@ -220,6 +235,7 @@ namespace Security_Visio_AddIn
 
         public void violationValidator(Visio.Shapes shapes, Visio.Document document)
         {
+            // TODO: Issue Handling
             //Ruleset 
             Visio.ValidationRuleSet violationValidatorRuleSet = document.Validation.RuleSets.Add("Violation Validation");
             violationValidatorRuleSet.Description = "Verify that the Violation events are correctly used in the document.";
@@ -231,9 +247,14 @@ namespace Security_Visio_AddIn
             var outgoingShapes = new List<Visio.Shape>();
             foreach(Visio.Shape shape in shapes)
             {
-                if(shape.Name == "Violation")
+                if(shape.Master.Name == "Violation")
                 {
                     Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                    if(outgoing1Dshapes.Length == 0)
+                    {
+                        // Issue Handling   Violation Event muss einen ausgehenden DangerFlow haben.
+                        break;
+                    }
                     foreach (Object element in outgoing1Dshapes)
                     {
                         outgoingShapes.Add(shapes.get_ItemFromID((int)element));
@@ -242,18 +263,17 @@ namespace Security_Visio_AddIn
                     {
                         if(element.Master.Name != "DangerFlow")
                         {
-                            //Issue Handling
                             customRule1.AddIssue(shape.ContainingPage, element);
                         }
                     }
-                }
-                
+                }              
             }
         }
 
 
         public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document)
         {
+            // TODO: Issue handling
             //Ruleset
             Visio.ValidationRuleSet surveillanceValidatorRuleSet = document.Validation.RuleSets.Add("Surveillance Validation");
             surveillanceValidatorRuleSet.Description = "Verify that the Surveillance elements are correctly used in the document.";
@@ -333,6 +353,84 @@ namespace Security_Visio_AddIn
             }
         }
 
+        public void CIAValidator(Visio.Shapes shapes, Visio.Document document)
+        {
+            // TODO: Issue handling
+            var informationSecurityShapes = new List<String>();
+            informationSecurityShapes.Add("Confidentiality");
+            informationSecurityShapes.Add("Integrity");
+            informationSecurityShapes.Add("Availability");
+            var informationShapes = new List<String>();
+            informationShapes.Add("Datenobjekt");
+            informationShapes.Add("Nachricht");
+            informationShapes.Add("Datenspeicher");
+            foreach (Visio.Shape shape in shapes)
+            {
+                if (informationSecurityShapes.Contains(shape.Master.Name))
+                {   
+                    if(shape.Master.Name == "Availability")
+                    {
+                        Boolean gluedToNonDataObject = false;
+                        var gluedShapes1 = new List<Visio.Shape>();
+                        Array allGlued1Shapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, "");
+                        foreach (Object element in allGlued1Shapes)
+                        {
+                            gluedShapes1.Add(shapes.get_ItemFromID((int)element));
+                        }
+                        foreach (Visio.Shape element in gluedShapes1)
+                        {
+                            if (!informationShapes.Contains(element.Master.Name))
+                            {
+                                gluedToNonDataObject = true;
+                            }
+                        }
+                        if (gluedToNonDataObject == true)
+                        {
+                            var outgoingFlows = new List<Visio.Shape>();
+                            Array outgoing1D = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                            foreach (Object element in outgoing1D)
+                            {
+                                outgoingFlows.Add(shapes.get_ItemFromID((int)element));
+                            }
+                            foreach(Visio.Shape x in outgoingFlows)
+                            {
+                                if(x.Master.Name != "Nachrichtenfluss")
+                                {
+
+                                    //Issue Handling    Ausgehender Fluss muss Nachrichtenfluss sein
+                                }
+                            }
+                            if (!outgoingFlows.Any())
+                            {
+                                //Issue Handling    Braucht ausgehenden Nachrichtenfluss
+                            }
+                            return;
+                        }
+                        
+
+                    }
+                    var gluedShapes = new List<Visio.Shape>();
+                    Array allGluedShapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, "");
+                    foreach (Object element in allGluedShapes)
+                    {
+                        gluedShapes.Add(shapes.get_ItemFromID((int)element));
+                    }
+                    foreach(Visio.Shape element in gluedShapes)
+                    {
+                        if (!informationShapes.Contains(element.Master.Name))
+                        {
+                            //Issue Handing     Information Security Shape muss an ein Daten-Shapen geklebt werden.
+                        }
+                    }
+                }
+            }
+        }
+
+        public void EntrypointValidator(Visio.Shapes shapes, Visio.Document document)
+        {
+            //  Shape.ContainerProperties.GetMemberState();
+        }
+
         public String[] getShapeNames(Visio.Shapes shapes)         //https://docs.microsoft.com/de-de/office/vba/api/visio.shapes.item
         {
             Visio.Shapes vsoShapes = shapes;
@@ -347,9 +445,6 @@ namespace Security_Visio_AddIn
             }
             return names;
         }
-
-
-
 
         #region Von VSTO generierter Code
 
