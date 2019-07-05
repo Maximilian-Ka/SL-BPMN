@@ -80,7 +80,7 @@ namespace Security_Visio_AddIn
 
         }
 
-        //TODO: Raise issue when there are no incoming and/or outgoing flows.
+
         public void gatewayValidator(Visio.Shapes shapes, Visio.Document document)
         {
             //Insert rule set
@@ -148,7 +148,6 @@ namespace Security_Visio_AddIn
 
         public void inspectionValidator(Visio.Shapes shapes, Visio.Document document)
         {
-            // TODO: Add issue for missing sequence flow
             //Rule set
             Visio.ValidationRuleSet inspectionValidatorRuleSet = document.Validation.RuleSets.Add("Inspection Validation");
             inspectionValidatorRuleSet.Description = "Verify that the Inspection-Shapes are correctly used in the document.";
@@ -205,7 +204,6 @@ namespace Security_Visio_AddIn
 
         public void violationValidator(Visio.Shapes shapes, Visio.Document document)
         {
-            //TODO: Issue Handling für Regel 1 evtl falsch;
             //Ruleset 
             Visio.ValidationRuleSet violationValidatorRuleSet = document.Validation.RuleSets.Add("Violation Validation");
             violationValidatorRuleSet.Description = "Verify that the Violation events are correctly used in the document.";
@@ -226,7 +224,7 @@ namespace Security_Visio_AddIn
                     Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
                     if(outgoing1Dshapes.Length == 0)
                     {
-                        // Issue Handling   Violation Event muss einen ausgehenden DangerFlow haben.
+                        // Issue Handling   Violation Event muss einen ausgehenden DangerFlow haben. (shape weil event markiert werden soll)
                         customRule2.AddIssue(shape.ContainingPage, shape);
                         break;
                     }
@@ -238,7 +236,7 @@ namespace Security_Visio_AddIn
                     {
                         if(element.Master.Name != "DangerFlow")
                         {
-                            //Issue Handling: Outgoing Flow ist kein DangerFlow
+                            //Issue Handling: Outgoing Flow ist kein DangerFlow (element weil Flow markiert werden soll)
                             customRule1.AddIssue(shape.ContainingPage, element);
                         }
                     }
@@ -277,7 +275,6 @@ namespace Security_Visio_AddIn
             {
                 if(surveillanceShapes.Contains(shape.Master.Name))
                 {
-                    //TODO Prüfe, ob outgoing1Dflows MessageFlows sind.
                     //Prüft ob dem Shape ein Container zugeordnet ist, wenn nicht: Verstoß gegen Modellierungsregel 1
                     if(shape.MemberOfContainers == null){
                         customRule1.AddIssue(shape.ContainingPage, shape);
@@ -334,7 +331,7 @@ namespace Security_Visio_AddIn
 
         public void CIAValidator(Visio.Shapes shapes, Visio.Document document)
         {
-            // TODO: Maxi Rücksprache ob eine Regel wirklich für erste beide Issuge Handling reicht
+            //Issue Handling: Ruleset
             Visio.ValidationRuleSet ciaValidatorRuleSet = document.Validation.RuleSets.Add("CIA Validation");
             violationValidatorRuleSet.Description = "Verify that the CIA elements are correctly used in the document.";
             
@@ -346,6 +343,7 @@ namespace Security_Visio_AddIn
             customRule2.Category = "CIA Elements";
             customRule2.Description = "Information Security elements can usually only be attached to Data-elements (Dataobject/Database/Message). Availability can additionally represent the Availability of a Message Flow";
 
+            //programm logic
             var informationSecurityShapes = new List<String>();
             informationSecurityShapes.Add("Confidentiality");
             informationSecurityShapes.Add("Integrity");
