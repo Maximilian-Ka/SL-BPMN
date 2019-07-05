@@ -11,13 +11,22 @@ namespace Security_Visio_AddIn
     public partial class ThisAddIn
     {
         // TODO: Validator-Methoden in Validator-Klasse auslagern
+        // TODO: Öffnen von Document nicht hardcoden.
         // TODO: Weitere Ausnahmen behandeln.
         // TODO: Issue Handling implementieren
         // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
-            string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
-            Visio.Document doc = this.Application.Documents.Open(docPath);
+            Visio.Document doc;
+            if (Application.Documents.Count > 0)
+            {
+                doc = Application.ActiveDocument;
+            }
+            else
+            {
+                string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
+                doc = this.Application.Documents.Open(docPath);
+            }
             Visio.Shapes vsoShapes = getShapesFromPage();
             Visio.ValidationRuleSet gatewayValidatorRuleSet = doc.Validation.RuleSets.Add("Gateway Validation");
             gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
@@ -25,7 +34,14 @@ namespace Security_Visio_AddIn
             surveillanceValidatorRuleSet.Description = "Verify that the Surveillance elements are correctly used in the document.";
             Visio.ValidationRuleSet inspectionValidatorRuleSet = doc.Validation.RuleSets.Add("Inspection Validation");
             inspectionValidatorRuleSet.Description = "Verify that the Inspection-Shapes are correctly used in the document.";
+            Visio.ValidationRuleSet violationValidatorRuleSet = doc.Validation.RuleSets.Add("Violation Validation");
+            violationValidatorRuleSet.Description = "Verify that the Violation events are correctly used in the document.";
+            Visio.ValidationRuleSet ciaValidatorRuleSet = doc.Validation.RuleSets.Add("CIA Validation");
+            ciaValidatorRuleSet.Description = "Verify that the CIA elements are correctly used in the document.";
+            //When Microsoft Visio performs validation, it fires a RuleSetValidated event for every rule set that it processes, even if a rule set is empty.
             Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
+
+
             //var incomingShapes = new List<String>();
             //foreach(Visio.Shape test in vsoShapes)
             //{
@@ -44,6 +60,7 @@ namespace Security_Visio_AddIn
         void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
         {
             //gatewayValidator(getShapesFromPage(), getActiveDocument());
+            
             if (RuleSet.Name == "Gateway Validation")
             {
                 gatewayValidator(getShapesFromPage(), getActiveDocument());
@@ -62,6 +79,11 @@ namespace Security_Visio_AddIn
             if (RuleSet.Name == "Surveillance Validation")
             {
                 surveillanceValidator(getShapesFromPage(), getActiveDocument());
+                return;
+            }
+            if (RuleSet.Name == "CIA Validation")
+            {
+                CIAValidator(getShapesFromPage(), getActiveDocument());
                 return;
             }
         }
@@ -83,6 +105,7 @@ namespace Security_Visio_AddIn
 
         public void gatewayValidator(Visio.Shapes shapes, Visio.Document document)
         {
+            // TODO: Issue Handling
             //Insert rule set
             Visio.ValidationRuleSet gatewayValidatorRuleSet = document.Validation.RuleSets.Add("Gateway Validation");
             gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
@@ -105,6 +128,16 @@ namespace Security_Visio_AddIn
                 {
                     Array incoming1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesIncoming1D, "");
                     Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                    if(incoming1Dshapes.Length == 0)
+                    {
+                        //Issue Handling    Keine eingehenden Flows
+                        break;
+                    }
+                    if(outgoing1Dshapes.Length == 0)
+                    {
+                        //Issue Handling    Keine ausgehenden Flows
+                        break;
+                    }
                     foreach (Object element in incoming1Dshapes)
                     {
                         incomingShapes.Add(shapes.get_ItemFromID((int)element));
@@ -226,7 +259,7 @@ namespace Security_Visio_AddIn
                     {
                         // Issue Handling   Violation Event muss einen ausgehenden DangerFlow haben. (shape weil event markiert werden soll)
                         customRule2.AddIssue(shape.ContainingPage, shape);
-                        break;
+                        continue;
                     }
                     foreach (Object element in outgoing1Dshapes)
                     {
@@ -333,13 +366,13 @@ namespace Security_Visio_AddIn
         {
             //Issue Handling: Ruleset
             Visio.ValidationRuleSet ciaValidatorRuleSet = document.Validation.RuleSets.Add("CIA Validation");
-            violationValidatorRuleSet.Description = "Verify that the CIA elements are correctly used in the document.";
+            ciaValidatorRuleSet.Description = "Verify that the CIA elements are correctly used in the document.";
             
-            Visio.ValidationRule customRule1 = surveillanceValidatorRuleSet.Rules.Add("avaNoOutMsgFlow");
+            Visio.ValidationRule customRule1 = ciaValidatorRuleSet.Rules.Add("availabilityNoOutMsgFlow");
             customRule1.Category = "CIA Elements";
             customRule1.Description = "The Availability element can only be used outside of Data-elements (Dataobject/Database/Message) if it is attached to an outgoing Message Flow";
 
-             Visio.ValidationRule customRule2 = surveillanceValidatorRuleSet.Rules.Add("");
+             Visio.ValidationRule customRule2 = ciaValidatorRuleSet.Rules.Add("attachISshapeToDataElement");
             customRule2.Category = "CIA Elements";
             customRule2.Description = "Information Security elements can usually only be attached to Data-elements (Dataobject/Database/Message). Availability can additionally represent the Availability of a Message Flow";
 
@@ -400,6 +433,10 @@ namespace Security_Visio_AddIn
                     }
                     var gluedShapes = new List<Visio.Shape>();
                     Array allGluedShapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, "");
+                    if(allGluedShapes.Length == 0)
+                    {
+                        //Issue Handling    Data-Security Element muss an ein Data-Shape geklebt werden.
+                    }
                     foreach (Object element in allGluedShapes)
                     {
                         gluedShapes.Add(shapes.get_ItemFromID((int)element));
