@@ -421,6 +421,61 @@ namespace Security_Visio_AddIn
             //  Shape.ContainerProperties.GetMemberState();
         }
 
+
+         public void barrierinspectionValidator (Visio.shape shapes, Visio.document document) {
+
+            foreach (Visio.shape shape in shapes) {
+
+                if (shape.name == "entrypoint" && noinspection(shape)) {
+
+                    Array<Visio.shape> gluedsha = shape.GluedShapes;
+
+                    foreach (Visio.shape item in gluedsha)
+	                {
+                        Array<Visio.shape> gluedsha2 = item.GluedShapes;
+
+                        foreach (Visio.shape item2 in gluedsha2) {
+
+                            if (item2.ContainingShape.Name == "Group" && istdasübergebeneShapehierenthalten(item2.Containingshape, "barrier"))//und enthält die Gruppe das Shape Barrier)
+	                        {
+                                //issueHandling
+	                        }
+                        }
+	                }
+
+                }
+	
+            }
+         }
+
+public boolean noinspection (Visio.shape shapebefore) {                           //Methode um zu gucken ob das shape vorher keine inspection war, wenn dem so ist gibt die Methode true zurück 
+            Visio.shapes shapea = getIncomingShapes(getIncomingShapes(shapebefore));
+            foreach (Visio.shape item in shapea)
+	        {
+                if(item.name == "Inspection") {
+                    return true;
+                    break;
+                }
+	        }
+
+	
+    }
+
+public boolean istdasübergebeneShapehierenthalten(Visio.shape shape, String name) {         //guckt ob eines der gluedshapes ein shape mit dem übergebenen shape enthält
+            
+            Visio.shape shapecol = shape.GluedShapes; 
+
+            foreach (Visio.Shape item3 in shapecol)
+	        {
+                if (item3.Name == "barrier")
+	            {
+                return true;
+                    break;
+	            }
+	        }
+    }
+
+
         public String[] getShapeNames(Visio.Shapes shapes)         //https://docs.microsoft.com/de-de/office/vba/api/visio.shapes.item
         {
             Visio.Shapes vsoShapes = shapes;
