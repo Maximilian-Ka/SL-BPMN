@@ -217,7 +217,6 @@ namespace Security_Visio_AddIn
                     {
                         // Issue Handling   Violation Event muss einen ausgehenden DangerFlow haben. (shape weil event markiert werden soll)
                         //customRule2.AddIssue(shape.ContainingPage, shape);
-                        Visio.ValidationRule test = violationValidatorRuleSet.Rules.get_ItemFromID(2);
                         violationValidatorRuleSet.Rules.get_ItemFromID(2).AddIssue(shape.ContainingPage, shape);
                         continue;
                     }
@@ -231,7 +230,7 @@ namespace Security_Visio_AddIn
                         {
                             //Issue Handling: Outgoing Flow ist kein DangerFlow (element weil Flow markiert werden soll)
                             //customRule1.AddIssue(shape.ContainingPage, element);
-                            violationValidatorRuleSet.Rules.get_ItemFromID(1).AddIssue(shape.ContainingPage, shape);
+                            violationValidatorRuleSet.Rules.get_ItemFromID(1).AddIssue(shape.ContainingPage, element);
                         }
                     }
                 }              
@@ -440,7 +439,7 @@ namespace Security_Visio_AddIn
             violationValidatorRuleSet.Description = "Verify that the Violation events are correctly used in the document.";
             Visio.ValidationRule customRule30 = violationValidatorRuleSet.Rules.Add("noOutgoingDangerFlow");
             customRule30.Category = "Violation Event";
-            customRule30.Description = "The outgoing flow of an Violation event has to be a DangerFlow";
+            customRule30.Description = "The outgoing flow of a Violation event has to be a DangerFlow";
             Visio.ValidationRule customRule31 = violationValidatorRuleSet.Rules.Add("noDangerFlow");
             customRule31.Category = "Violation Event";
             customRule31.Description = "A Violation event has to have a outgoing DangerFlow";
