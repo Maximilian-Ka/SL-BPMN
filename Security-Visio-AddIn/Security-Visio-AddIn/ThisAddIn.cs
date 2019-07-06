@@ -456,6 +456,7 @@ namespace Security_Visio_AddIn
         public void EntrypointValidator(Visio.Shapes shapes, Visio.Document document)
         {
             //  Shape.ContainerProperties.GetMemberState();
+            //test
         }
 
         public String[] getShapeNames(Visio.Shapes shapes)         //https://docs.microsoft.com/de-de/office/vba/api/visio.shapes.item
