@@ -80,6 +80,11 @@ namespace Security_Visio_AddIn
                 CIAValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
                 return;
             }
+            if (RuleSet.Name == "EntryPoint Validation")
+            {
+                EntrypointValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
+                return;
+            }
         }
 
         public Visio.Document getActiveDocument()
@@ -248,7 +253,6 @@ namespace Security_Visio_AddIn
             var containerShapes = new List<Visio.Shape>();
             surveillanceShapes.Add("SecurityGuard");
             surveillanceShapes.Add("CCTV");
-            surveillanceShapes.Add("PerimeterBarrier");
             surveillanceShapes.Add("AlarmSystem");
             Boolean inGroup = false;
             foreach (Visio.Shape shape in shapes)
@@ -396,27 +400,8 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void EntrypointValidator(Visio.Shapes shapes, Visio.Document document)
+        public void EntrypointValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet entrypointValidatorRuleSet)
         {
-            //Issue Handling (temp)
-            Visio.ValidationRuleSet entryValidatorRuleSet = document.Validation.RuleSets.Add("EntryPoint Validation");
-            entryValidatorRuleSet.Description = "Verify that the CIA elements are correctly used in the document.";
-
-            Visio.ValidationRule customRule1 = entryValidatorRuleSet.Rules.Add("noOutFlow");
-            customRule1.Category = "EntryPoint";
-            customRule1.Description = "An EntryPoint needs to have either an outgoing Sequence Flow or an outgoing DangerFlow";
-
-            Visio.ValidationRule customRule2 = entryValidatorRuleSet.Rules.Add("noInFlow");
-            customRule2.Category = "EntryPoint";
-            customRule2.Description = "An EntryPoint needs to have a incoming Sequence Flow or DangerFlow";
-
-            Visio.ValidationRule customRule3 = entryValidatorRuleSet.Rules.Add("");
-            customRule3.Category = "EntryPoint";
-            customRule3.Description = "Whenever an EntryPoint stand before a secure zone (Group with PerimeterBarrier), it has to be preceded by an Identification task";
-
-            Visio.ValidationRule customRule4 = entryValidatorRuleSet.Rules.Add("");
-            customRule4.Category = "EntryPoint";
-            customRule4.Description = "The an EntryPoint following Element, has to be inside a seperate zone (inside a Group object)";
 
 
             // Listen für auf den EntryPoint folgende Shapes
@@ -442,7 +427,8 @@ namespace Security_Visio_AddIn
                     Array out1DArray = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
                     if(out1DArray.Length == 0)
                     {
-                        customRule1.AddIssue(shape.ContainingPage, shape);
+                        //customRule1.AddIssue(shape.ContainingPage, shape);
+                        entrypointValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
                     }
                     //Array in Liste mit den out 1D shapes casten
                     foreach (Object element in out1DArray)
@@ -489,7 +475,8 @@ namespace Security_Visio_AddIn
                                                 if(in1DArray.Length == 0)
                                                 {
                                                     // Issue Handling: EntryPoint benötigt einen Incoming Flow; Muss nach einem Identifikationselement stehen
-                                                    customRule2.AddIssue(shape.ContainingPage, shape);
+                                                    //customRule2.AddIssue(shape.ContainingPage, shape);
+                                                    entrypointValidatorRuleSet.Rules[2].AddIssue(shape.ContainingPage, shape);
                                                 }
                                                 // In Liste mit in 1D Shapes casten
                                                 foreach(Object element in in1DArray)
@@ -511,7 +498,8 @@ namespace Security_Visio_AddIn
                                                         if(in2DShape.Master.Name != "Identification")
                                                         {
                                                             // Issue Handling: Wenn EntryPoint vor einem Schutzbereich steht, muss vor dem EntryPoint eine Identifikation statt finden
-                                                            customRule3.AddIssue(shape.ContainingPage, shape);
+                                                            //customRule3.AddIssue(shape.ContainingPage, shape);
+                                                            entrypointValidatorRuleSet.Rules[3].AddIssue(shape.ContainingPage, shape);
                                                         }
                                                     }
                                                 }
@@ -524,7 +512,8 @@ namespace Security_Visio_AddIn
                                 if(inGroup == false)
                                 {
                                     // Issue Handling: out 2D shape ist nicht Teil einer Gruppe
-                                    customRule4.AddIssue(out2DShape.ContainingPage, out2DShape);
+                                    //customRule4.AddIssue(out2DShape.ContainingPage, out2DShape);
+                                    entrypointValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
                                 }
                             }
                         }
@@ -586,6 +575,21 @@ namespace Security_Visio_AddIn
             Visio.ValidationRule customRule41 = ciaValidatorRuleSet.Rules.Add("attachISshapeToDataElement");
             customRule41.Category = "CIA Elements";
             customRule41.Description = "Information Security elements can usually only be attached to Data-elements (Dataobject/Database/Message). Availability can additionally represent the Availability of a Message Flow";
+
+            Visio.ValidationRuleSet entryValidatorRuleSet = doc.Validation.RuleSets.Add("EntryPoint Validation");
+            entryValidatorRuleSet.Description = "Verify that the CIA elements are correctly used in the document.";
+            Visio.ValidationRule customRule50 = entryValidatorRuleSet.Rules.Add("noOutFlow");
+            customRule50.Category = "EntryPoint";
+            customRule50.Description = "An EntryPoint needs to have either an outgoing Sequence Flow or an outgoing DangerFlow";
+            Visio.ValidationRule customRule51 = entryValidatorRuleSet.Rules.Add("noInFlow");
+            customRule51.Category = "EntryPoint";
+            customRule51.Description = "An EntryPoint needs to have a incoming Sequence Flow or DangerFlow";
+            Visio.ValidationRule customRule52 = entryValidatorRuleSet.Rules.Add("noIdentification");
+            customRule52.Category = "EntryPoint";
+            customRule52.Description = "Whenever an EntryPoint stand before a secure zone (Group with PerimeterBarrier), it has to be preceded by an Identification task";
+            Visio.ValidationRule customRule53 = entryValidatorRuleSet.Rules.Add("no seperate zone");
+            customRule53.Category = "EntryPoint";
+            customRule53.Description = "The an EntryPoint following element, has to be inside a seperate zone (inside a Group object)";
         }
 
         public String[] getShapeNames(Visio.Shapes shapes)         //https://docs.microsoft.com/de-de/office/vba/api/visio.shapes.item
