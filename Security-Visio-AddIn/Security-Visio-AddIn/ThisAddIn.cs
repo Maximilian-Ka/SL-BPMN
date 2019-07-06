@@ -250,6 +250,7 @@ namespace Security_Visio_AddIn
             customRule2.Category = "Violation Event";
             customRule2.Description = "A Violation event has to have a outgoing DangerFlow";
 
+            //program logic
             var outgoingShapes = new List<Visio.Shape>();
             foreach(Visio.Shape shape in shapes)
             {
@@ -456,7 +457,139 @@ namespace Security_Visio_AddIn
 
         public void EntrypointValidator(Visio.Shapes shapes, Visio.Document document)
         {
-            //  Shape.ContainerProperties.GetMemberState();
+            //Issue Handling (temp)
+            Visio.ValidationRuleSet entryValidatorRuleSet = document.Validation.RuleSets.Add("EntryPoint Validation");
+            entryValidatorRuleSet.Description = "Verify that the CIA elements are correctly used in the document.";
+
+            Visio.ValidationRule customRule1 = entryValidatorRuleSet.Rules.Add("noOutFlow");
+            customRule1.Category = "EntryPoint";
+            customRule1.Description = "An EntryPoint needs to have either an outgoing Sequence Flow or an outgoing DangerFlow";
+
+            Visio.ValidationRule customRule2 = entryValidatorRuleSet.Rules.Add("noInFlow");
+            customRule2.Category = "EntryPoint";
+            customRule2.Description = "An EntryPoint needs to have a incoming Sequence Flow or DangerFlow";
+
+            Visio.ValidationRule customRule3 = entryValidatorRuleSet.Rules.Add("");
+            customRule3.Category = "EntryPoint";
+            customRule3.Description = "Whenever an EntryPoint stand before a secure zone (Group with PerimeterBarrier), it has to be preceded by an Identification task";
+
+            Visio.ValidationRule customRule4 = entryValidatorRuleSet.Rules.Add("");
+            customRule4.Category = "EntryPoint";
+            customRule4.Description = "The an EntryPoint following Element, has to be inside a seperate zone (inside a Group object)";
+
+
+            // Listen für auf den EntryPoint folgende Shapes
+            var out1DShapeList = new List<Visio.Shape>();
+            var out2DShapeList = new List<Visio.Shape>();
+            // Listen für dem EntryPoint vorhergehenden Shapes
+            var in1DShapeList = new List<Visio.Shape>();
+            var in2DShapeList = new List<Visio.Shape>();
+            // Liste für Container Objecte
+            var containerShapes = new List<Visio.Shape>();
+            var containerMembers = new List<Visio.Shape>();
+            Boolean inGroup = false;
+
+            //Programmlogik (haha "Logik" xD das würde ja vorraussetzten dass da alles logisch wäre du N00b)
+            // Laufe über alle Shapes des Dokuments
+            foreach(Visio.Shape shape in shapes)
+            {
+                if(shape.Master.Name == "EntryPoint") //Für jeden EntryPoint im Dokument
+                {
+                    //Es wird davon ausgegangen, dass EntryPoint immer mit nur einem outgoing Sequenzfluss (bzw. D.F.) verbunden ist
+                    //zusätzlich kann ein EntryPoint aber  noch mit einem MessageFlow verbunden sein
+                    //prüfe alle outgoing 1D shapes (Pfeile: Sequenzfluss, DangerFlow, MSgFlow)
+                    Array out1DArray = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                    if(out1DArray.Length == 0)
+                    {
+                        customRule1.AddIssue(shape.ContainingPage, shape);
+                    }
+                    //Array in Liste mit den out 1D shapes casten
+                    foreach (Object element in out1DArray)
+                    {
+                        out1DShapeList.Add(shapes.get_ItemFromID((int)element));
+                    }
+                    // Über alle outgoing Flows laufen
+                    foreach(Visio.Shape outFlow in out1DShapeList)
+                    {
+                        if((outFlow.Master.Name == "DangerFlow") || (outFlow.Master.Name == "Sequenzfluss"))
+                        {
+                            Array out2DArray = outFlow.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing2D, ""); //an den Fluss gebundenen outgoing 2D shapes
+                            //Es wird davon ausgegangen, dass nur ein outgoing 2D Shape an einen Flow gebunden ist
+                            foreach(Object element in out2DArray)
+                            {
+                                out2DShapeList.Add(shapes.get_ItemFromID((int)element)); // in Liste mit den out 2D shapes casten
+                            }
+                            foreach(Visio.Shape out2DShape in out2DShapeList) //laufe über alle out 2D shapes (nur eins)
+                            {
+                                //ist das out2DShape Teil eines Gruppen-containers
+                                Array containerIDs = out2DShape.MemberOfContainers; //Holt alle Container in denen das 2D Shape enthalten ist
+                                foreach (Object element in containerIDs)
+                                {
+                                    containerShapes.Add(shapes.get_ItemFromID((int)element)); //Castet Container IDs in Liste mit Container Objekten
+                                }
+                                foreach(Visio.Shape container in containerShapes)
+                                {
+                                    //true wenn 2D shape Teil eines Gruppen container ist --> Issue Handling wenn 2D shape nicht Teil einer Gruppe ist (alle zugeordneten Container dürfen keine Gruppe sein)
+                                    if(container.Master.NameU == "Group")
+                                    {
+                                        inGroup = true;
+                                        //hole alle Shapes die Teil des Gruppen Containers sind
+                                        Array memberShapes = container.ContainerProperties.GetMemberShapes(0); // Array "with all shape types and including items in nested containers"
+                                        foreach(Object element in memberShapes) //kann nicht leer sein, da mind. out2DShape enthalten sein muss
+                                        {
+                                            containerMembers.Add(shapes.get_ItemFromID((int)element)); //in Liste mit allen Shapes auf dem Container casten
+                                        }
+                                        foreach(Visio.Shape memberShape in containerMembers) //prüfe alle Mitglieder des Gruppen containers
+                                        {
+                                            //wenn PreimeterBarrier enthalten -> Sicherheitsbereich -> Identifikation vor EntryPoint
+                                            if (memberShape.Master.Name == "PerimeterBarrier") 
+                                            {
+                                                Array in1DArray = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesIncoming1D,"");
+                                                if(in1DArray.Length == 0)
+                                                {
+                                                    // Issue Handling: EntryPoint benötigt einen Incoming Flow; Muss nach einem Identifikationselement stehen
+                                                    customRule2.AddIssue(shape.ContainingPage, shape);
+                                                }
+                                                // In Liste mit in 1D Shapes casten
+                                                foreach(Object element in in1DArray)
+                                                {
+                                                    in1DShapeList.Add(shapes.get_ItemFromID((int)element)); //es wird davon ausgegangen dass nur ein Element enthalten ist
+                                                }
+                                                //Laufe über alle incoming Flows (nur einer)
+                                                foreach(Visio.Shape inFlow in in1DShapeList)
+                                                {
+                                                    Array in2DArray = inFlow.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesIncoming2D, "");
+                                                    //In Liste mit allen 2D Shapes casten --> Liste enthält das 2D Shape welchses sich vor dem EntryPoint befindet
+                                                    foreach(Object element in in2DArray)
+                                                    {
+                                                        in2DShapeList.Add(shapes.get_ItemFromID((int)element));
+                                                    }
+                                                    //prüfe vor vorangehendes Element eine Identifikation ist
+                                                    foreach(Visio.Shape in2DShape in in2DShapeList)
+                                                    {
+                                                        if(in2DShape.Master.Name != "Identification")
+                                                        {
+                                                            // Issue Handling: Wenn EntryPoint vor einem Schutzbereich steht, muss vor dem EntryPoint eine Identifikation statt finden
+                                                            customRule3.AddIssue(shape.ContainingPage, shape);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                }
+                                //Issue Handling: out 2D shape ist nicht Teil einer Gruppe
+                                if(inGroup == false)
+                                {
+                                    // Issue Handling: out 2D shape ist nicht Teil einer Gruppe
+                                    customRule4.AddIssue(out2DShape.ContainingPage, out2DShape);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         public String[] getShapeNames(Visio.Shapes shapes)         //https://docs.microsoft.com/de-de/office/vba/api/visio.shapes.item
