@@ -63,27 +63,27 @@ namespace Security_Visio_AddIn
             
             if (RuleSet.Name == "Gateway Validation")
             {
-                gatewayValidator(getShapesFromPage(), getActiveDocument());
+                gatewayValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
                 return;
             }
             if (RuleSet.Name == "Inspection Validation")
             {
-                inspectionValidator(getShapesFromPage(), getActiveDocument());
+                inspectionValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
                 return;
             }
             if (RuleSet.Name == "Violation Validation")
             {
-                violationValidator(getShapesFromPage(), getActiveDocument());
+                violationValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
                 return;
             }
             if (RuleSet.Name == "Surveillance Validation")
             {
-                surveillanceValidator(getShapesFromPage(), getActiveDocument());
+                surveillanceValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
                 return;
             }
             if (RuleSet.Name == "CIA Validation")
             {
-                CIAValidator(getShapesFromPage(), getActiveDocument());
+                CIAValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
                 return;
             }
         }
@@ -103,12 +103,12 @@ namespace Security_Visio_AddIn
         }
 
 
-        public void gatewayValidator(Visio.Shapes shapes, Visio.Document document)
+        public void gatewayValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet gatewayValidatorRuleSet)
         {
             // TODO: Issue Handling
             //Insert rule set
-            Visio.ValidationRuleSet gatewayValidatorRuleSet = document.Validation.RuleSets.Add("Gateway Validation");
-            gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
+            //Visio.ValidationRuleSet gatewayValidatorRuleSet = document.Validation.RuleSets.Add("Gateway Validation");
+            //gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
 
             Visio.ValidationRule customRule1 = gatewayValidatorRuleSet.Rules.Add("distinctFlows2sequenceFlow");
             customRule1.Category = "Gateway";
@@ -179,11 +179,11 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void inspectionValidator(Visio.Shapes shapes, Visio.Document document)
+        public void inspectionValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet inspectionValidatorRuleSet)
         {
             //Rule set
-            Visio.ValidationRuleSet inspectionValidatorRuleSet = document.Validation.RuleSets.Add("Inspection Validation");
-            inspectionValidatorRuleSet.Description = "Verify that the Inspection-Shapes are correctly used in the document.";
+            //Visio.ValidationRuleSet inspectionValidatorRuleSet = document.Validation.RuleSets.Add("Inspection Validation");
+            //inspectionValidatorRuleSet.Description = "Verify that the Inspection-Shapes are correctly used in the document.";
 
             Visio.ValidationRule customRule1 = inspectionValidatorRuleSet.Rules.Add("missingSequenceFlow");
             customRule1.Category = "ispection-shape";
@@ -235,7 +235,7 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void violationValidator(Visio.Shapes shapes, Visio.Document document)
+        public void violationValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet)
         {
             //Ruleset 
             Visio.ValidationRuleSet violationValidatorRuleSet = document.Validation.RuleSets.Add("Violation Validation");
@@ -278,7 +278,7 @@ namespace Security_Visio_AddIn
         }
 
 
-        public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document)
+        public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet)
         {
             //Ruleset
             Visio.ValidationRuleSet surveillanceValidatorRuleSet = document.Validation.RuleSets.Add("Surveillance Validation");
@@ -362,7 +362,7 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void CIAValidator(Visio.Shapes shapes, Visio.Document document)
+        public void CIAValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet)
         {
             //Issue Handling: Ruleset
             Visio.ValidationRuleSet ciaValidatorRuleSet = document.Validation.RuleSets.Add("CIA Validation");
