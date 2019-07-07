@@ -319,7 +319,6 @@ namespace Security_Visio_AddIn
         public void CIAValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet ciaValidatorRuleSet)
         {
 
-            // TODO: Issue Handling Data-Security Element muss an ein Data-Shape geklebt werden.
 
             var informationSecurityShapes = new List<String>();
             informationSecurityShapes.Add("Confidentiality");
@@ -381,7 +380,9 @@ namespace Security_Visio_AddIn
                     Array allGluedShapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, "");
                     if(allGluedShapes.Length == 0)
                     {
-                        //Issue Handling    Data-Security Element muss an ein Data-Shape geklebt werden.
+                        // Issue Handling: Data-Security Element muss an ein Data-Shape geklebt werden.
+                        ciaValidatorRuleSet.Rules[2].AddIssue(shape.ContainingPage, shape);
+                        continue;
                     }
                     foreach (Object element in allGluedShapes)
                     {
