@@ -119,12 +119,12 @@ namespace Security_Visio_AddIn
                     if(incoming1Dshapes.Length == 0)
                     {
                         //Issue Handling    Keine eingehenden Flows
-                        break;
+                        continue;
                     }
                     if(outgoing1Dshapes.Length == 0)
                     {
                         //Issue Handling    Keine ausgehenden Flows
-                        break;
+                        continue;
                     }
                     foreach (Object element in incoming1Dshapes)
                     {
@@ -147,7 +147,6 @@ namespace Security_Visio_AddIn
                                 {
                                     //customRule1.AddIssue(x.ContainingPage, x);
                                     gatewayValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
-
                                 }
                             }
                             break;                           
@@ -243,7 +242,6 @@ namespace Security_Visio_AddIn
             }
         }
 
-
         public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet surveillanceValidatorRuleSet)
         {
             // TODO: Funktioniert bei Gruppenelementen mit selbst gesetztem Verbindungspunkt nicht
@@ -319,7 +317,6 @@ namespace Security_Visio_AddIn
         public void CIAValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet ciaValidatorRuleSet)
         {
 
-
             var informationSecurityShapes = new List<String>();
             informationSecurityShapes.Add("Confidentiality");
             informationSecurityShapes.Add("Integrity");
@@ -373,8 +370,6 @@ namespace Security_Visio_AddIn
                             }
                             return;
                         }
-                        
-
                     }
                     var gluedShapes = new List<Visio.Shape>();
                     Array allGluedShapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, "");
@@ -403,8 +398,6 @@ namespace Security_Visio_AddIn
 
         public void EntrypointValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet entrypointValidatorRuleSet)
         {
-
-
             // Listen für auf den EntryPoint folgende Shapes
             var out1DShapeList = new List<Visio.Shape>();
             var out2DShapeList = new List<Visio.Shape>();
@@ -508,7 +501,6 @@ namespace Security_Visio_AddIn
                                             }
                                         }
                                     }
-                                    
                                 }
                                 //Issue Handling: out 2D shape ist nicht Teil einer Gruppe
                                 if(inGroup == false)
@@ -534,7 +526,9 @@ namespace Security_Visio_AddIn
             Visio.ValidationRule customRule2 = gatewayValidatorRuleSet.Rules.Add("equalFlows2distinctFlow");
             customRule2.Category = "Gateway";
             customRule2.Description = "If incoming flows to a gateway are all of the same type, the outgoing flow must be of that same type";
-
+            Visio.ValidationRule customRule3 = gatewayValidatorRuleSet.Rules.Add("noFlowsAttached");
+            customRule3.Category = "Gateway";
+            customRule3.Description = "A Gateway element has to have outcoming and incoming Flows";
 
             Visio.ValidationRuleSet surveillanceValidatorRuleSet = doc.Validation.RuleSets.Add("Surveillance Validation");
             surveillanceValidatorRuleSet.Description = "Verify that the Surveillance elements are correctly used in the document.";
