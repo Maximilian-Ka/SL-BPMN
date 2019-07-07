@@ -136,10 +136,10 @@ namespace Security_Visio_AddIn
                         outgoingShapes.Add(shapes.get_ItemFromID((int)element));
                     }
 
-                    String comparisonShape = incomingShapes.First().Name;
+                    String comparisonShape = incomingShapes.First().Master.Name;
                     foreach (Visio.Shape current in incomingShapes)
                     {
-                        if(current.Master.NameU != comparisonShape)
+                        if(current.Master.Name != comparisonShape)
                         {   //Wenn ungleiche Sequenzflüsse zusammengeführt werden, müssen ausgehende Sequenzflüsse DangerFlows sein.
                             mixedFlows = true;
                             foreach(Visio.Shape x in outgoingShapes)
@@ -158,7 +158,7 @@ namespace Security_Visio_AddIn
                     {
                         foreach(Visio.Shape element in outgoingShapes)
                         {
-                            if(element.Master.NameU != comparisonShape)
+                            if(element.Master.Name != comparisonShape)
                             {
                                 //customRule2.AddIssue(element.ContainingPage, element);
                                 gatewayValidatorRuleSet.Rules[2].AddIssue(shape.ContainingPage, shape);
