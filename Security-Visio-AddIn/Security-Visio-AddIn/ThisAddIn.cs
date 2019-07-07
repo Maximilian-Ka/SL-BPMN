@@ -53,36 +53,35 @@ namespace Security_Visio_AddIn
 
         void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
         {
-            //gatewayValidator(getShapesFromPage(), getActiveDocument());
             
             if (RuleSet.Name == "Gateway Validation")
             {
-                gatewayValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
+                gatewayValidator(getShapesFromPage(),  RuleSet);
                 return;
             }
             if (RuleSet.Name == "Inspection Validation")
             {
-                inspectionValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
+                inspectionValidator(getShapesFromPage(), RuleSet);
                 return;
             }
             if (RuleSet.Name == "Violation Validation")
             {
-                violationValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
+                violationValidator(getShapesFromPage(), RuleSet);
                 return;
             }
             if (RuleSet.Name == "Surveillance Validation")
             {
-                surveillanceValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
+                surveillanceValidator(getShapesFromPage(), RuleSet);
                 return;
             }
             if (RuleSet.Name == "CIA Validation")
             {
-                CIAValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
+                CIAValidator(getShapesFromPage(), RuleSet);
                 return;
             }
             if (RuleSet.Name == "EntryPoint Validation")
             {
-                EntrypointValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
+                EntrypointValidator(getShapesFromPage(), RuleSet);
                 return;
             }
         }
@@ -102,7 +101,7 @@ namespace Security_Visio_AddIn
         }
 
 
-        public void gatewayValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet gatewayValidatorRuleSet)
+        public void gatewayValidator(Visio.Shapes shapes, Visio.ValidationRuleSet gatewayValidatorRuleSet)
         {
             // TODO: Issue Handling
 
@@ -169,7 +168,7 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void inspectionValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet inspectionValidatorRuleSet)
+        public void inspectionValidator(Visio.Shapes shapes, Visio.ValidationRuleSet inspectionValidatorRuleSet)
         {
             
             var gluedShapesIDs = new List<int>();
@@ -210,7 +209,7 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void violationValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet violationValidatorRuleSet)
+        public void violationValidator(Visio.Shapes shapes, Visio.ValidationRuleSet violationValidatorRuleSet)
         {
 
             //program logic
@@ -245,7 +244,7 @@ namespace Security_Visio_AddIn
         }
 
 
-        public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet surveillanceValidatorRuleSet)
+        public void surveillanceValidator(Visio.Shapes shapes, Visio.ValidationRuleSet surveillanceValidatorRuleSet)
         {
 
             //Validator
@@ -260,7 +259,7 @@ namespace Security_Visio_AddIn
                 if(surveillanceShapes.Contains(shape.Master.Name))
                 {
                     //Prüft ob dem Shape ein Container zugeordnet ist, wenn nicht: Verstoß gegen Modellierungsregel 1
-                    if(shape.MemberOfContainers == null){
+                    if(shape.MemberOfContainers.Length == 0){
                         //customRule1.AddIssue(shape.ContainingPage, shape);
                         surveillanceValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
                     }
@@ -274,7 +273,7 @@ namespace Security_Visio_AddIn
                         foreach(Visio.Shape container in containerShapes){
                             if(container.Master.NameU == "Group"){
                                 var outgoingShapes = new List<Visio.Shape>();
-                                Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                                Array outgoing1Dshapes = container.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
                                 foreach (Object element in outgoing1Dshapes)
                                 {
                                     outgoingShapes.Add(shapes.get_ItemFromID((int)element));
@@ -297,7 +296,7 @@ namespace Security_Visio_AddIn
                                 if (container.Master.NameU == "Swimlane List")
                                 {
                                     var outgoingShapes = new List<Visio.Shape>();
-                                    Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                                    Array outgoing1Dshapes = container.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
                                     foreach (Object element in outgoing1Dshapes)
                                     {
                                         outgoingShapes.Add(shapes.get_ItemFromID((int)element));
@@ -316,7 +315,7 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void CIAValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet ciaValidatorRuleSet)
+        public void CIAValidator(Visio.Shapes shapes, Visio.ValidationRuleSet ciaValidatorRuleSet)
         {
             
 
@@ -363,7 +362,7 @@ namespace Security_Visio_AddIn
                                 {
                                     //Issue Handling: Ausgehender Fluss muss Nachrichtenfluss sein
                                     //customRule1.AddIssue(shape.ContainingPage, shape);
-                                    ciaValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
+                                    ciaValidatorRuleSet.Rules[1].AddIssue(x.ContainingPage, x);
                                 }
                             }
                             if (!outgoingFlows.Any())
@@ -400,10 +399,8 @@ namespace Security_Visio_AddIn
             }
         }
 
-        public void EntrypointValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet entrypointValidatorRuleSet)
+        public void EntrypointValidator(Visio.Shapes shapes, Visio.ValidationRuleSet entrypointValidatorRuleSet)
         {
-
-
             // Listen für auf den EntryPoint folgende Shapes
             var out1DShapeList = new List<Visio.Shape>();
             var out2DShapeList = new List<Visio.Shape>();
@@ -415,7 +412,6 @@ namespace Security_Visio_AddIn
             var containerMembers = new List<Visio.Shape>();
             Boolean inGroup = false;
 
-            //Programmlogik (haha "Logik" xD das würde ja vorraussetzten dass da alles logisch wäre du N00b)
             // Laufe über alle Shapes des Dokuments
             foreach(Visio.Shape shape in shapes)
             {
