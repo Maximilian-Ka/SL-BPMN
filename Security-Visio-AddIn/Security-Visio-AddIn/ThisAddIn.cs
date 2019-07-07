@@ -104,7 +104,7 @@ namespace Security_Visio_AddIn
 
         public void gatewayValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet gatewayValidatorRuleSet)
         {
-            // TODO: Issue Handling
+            // TODO: Issue Handling: ausgehende und eingehende Flüsse
 
             Boolean mixedFlows = false;
             var incomingShapes = new List<Visio.Shape>();
@@ -189,7 +189,7 @@ namespace Security_Visio_AddIn
                     }
                     if (!gluedShapesIDs.Any())  
                     {
-                        inspectionValidatorRuleSet.Rules[2].AddIssue(shape.ContainingPage, shape); //Issue Handling    Keine glued 2D Shapes vorhanden
+                        inspectionValidatorRuleSet.Rules[2].AddIssue(shape.ContainingPage, shape); // Issue Handling: Keine glued 2D Shapes vorhanden
                         break;
                     }
                     else
@@ -203,7 +203,7 @@ namespace Security_Visio_AddIn
                         }
                         if (count== 0)
                         {
-                            inspectionValidatorRuleSet.Rules[3].AddIssue(shape.ContainingPage, shape); //Issue Handling    Keine "Violation"-Shape an das Inspection-Shape geklebt.
+                            inspectionValidatorRuleSet.Rules[3].AddIssue(shape.ContainingPage, shape); // Issue Handling: Keine "Violation"-Shape an das Inspection-Shape geklebt.
                         }
                     }
                 }
@@ -213,7 +213,6 @@ namespace Security_Visio_AddIn
         public void violationValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet violationValidatorRuleSet)
         {
 
-            //program logic
             var outgoingShapes = new List<Visio.Shape>();
             foreach(Visio.Shape shape in shapes)
             {
@@ -247,6 +246,7 @@ namespace Security_Visio_AddIn
 
         public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet surveillanceValidatorRuleSet)
         {
+            // TODO: Funktioniert bei Gruppenelementen mit selbst gesetztem Verbindungspunkt nicht
 
             //Validator
             var surveillanceShapes = new List<String>();
@@ -318,9 +318,9 @@ namespace Security_Visio_AddIn
 
         public void CIAValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet ciaValidatorRuleSet)
         {
-            
 
-            //programm logic
+            // TODO: Issue Handling Data-Security Element muss an ein Data-Shape geklebt werden.
+
             var informationSecurityShapes = new List<String>();
             informationSecurityShapes.Add("Confidentiality");
             informationSecurityShapes.Add("Integrity");
