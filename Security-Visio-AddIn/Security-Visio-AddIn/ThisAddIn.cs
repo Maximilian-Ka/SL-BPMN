@@ -221,7 +221,7 @@ namespace Security_Visio_AddIn
                     Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
                     if(outgoing1Dshapes.Length == 0)
                     {
-                        // Issue Handling   Violation Event muss einen ausgehenden DangerFlow haben. (shape weil event markiert werden soll)
+                        // Issue Handling: Violation Event muss einen ausgehenden DangerFlow haben. (shape weil event markiert werden soll)
                         //customRule2.AddIssue(shape.ContainingPage, shape);
                         violationValidatorRuleSet.Rules.get_ItemFromID(2).AddIssue(shape.ContainingPage, shape);
                         continue;
@@ -245,9 +245,7 @@ namespace Security_Visio_AddIn
 
         public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet surveillanceValidatorRuleSet)
         {
-            // TODO: Funktioniert bei Gruppenelementen mit selbst gesetztem Verbindungspunkt nicht
 
-            //Validator
             var surveillanceShapes = new List<String>();
             var containerShapes = new List<Visio.Shape>();
             surveillanceShapes.Add("SecurityGuard");
@@ -280,7 +278,7 @@ namespace Security_Visio_AddIn
                                 }
                                 if (!outgoingShapes.Any())
                                 {
-                                    //Issue  Kein outgoing Message Flow an dem überwachten Group-Shape
+                                    // Issue Handling: Kein outgoing Message Flow an dem überwachten Group-Shape
                                     //customRule2.AddIssue(shape.ContainingPage, shape);
                                     surveillanceValidatorRuleSet.Rules[2].AddIssue(shape.ContainingPage, shape);
                                 }
@@ -303,7 +301,7 @@ namespace Security_Visio_AddIn
                                     }
                                     if (!outgoingShapes.Any())
                                     {
-                                        //Issue  Kein outgoing Message Flow an dem überwachten Lane-Shape
+                                        // Issue Handling: Kein outgoing Message Flow an dem überwachten Lane-Shape
                                         //customRule3.AddIssue(shape.ContainingPage, shape);
                                         surveillanceValidatorRuleSet.Rules[2].AddIssue(shape.ContainingPage, shape);
                                     }
@@ -410,7 +408,6 @@ namespace Security_Visio_AddIn
             var containerMembers = new List<Visio.Shape>();
             Boolean inGroup = false;
 
-            //Programmlogik (haha "Logik" xD das würde ja vorraussetzten dass da alles logisch wäre du N00b)
             // Laufe über alle Shapes des Dokuments
             foreach(Visio.Shape shape in shapes)
             {
@@ -422,8 +419,9 @@ namespace Security_Visio_AddIn
                     Array out1DArray = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
                     if(out1DArray.Length == 0)
                     {
+                        // Issue Handling: EntryPoint has to have an outgoing Flow
                         //customRule1.AddIssue(shape.ContainingPage, shape);
-                        entrypointValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape); //EP has to have an outgoing Flow
+                        entrypointValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
                         continue;
                     }
                     //Array in Liste mit den out 1D shapes casten
@@ -503,7 +501,6 @@ namespace Security_Visio_AddIn
                                         }
                                     }
                                 }
-                                //Issue Handling: out 2D shape ist nicht Teil einer Gruppe
                                 if(inGroup == false)
                                 {
                                     // Issue Handling: out 2D shape ist nicht Teil einer Gruppe
@@ -519,6 +516,7 @@ namespace Security_Visio_AddIn
 
         public void insertRuleSets(Visio.Document doc)
         {
+            //Ruleset für korrekte Nutzung von Gateways in Verbindung mit DangerFlows und Sequenzflüssen
             Visio.ValidationRuleSet gatewayValidatorRuleSet = doc.Validation.RuleSets.Add("Gateway Validation");
             gatewayValidatorRuleSet.Description = "Verify that the gateways are correctly used in the document.";
             Visio.ValidationRule customRule1 = gatewayValidatorRuleSet.Rules.Add("distinctFlows2sequenceFlow");
@@ -531,6 +529,7 @@ namespace Security_Visio_AddIn
             customRule3.Category = "Gateway";
             customRule3.Description = "A Gateway element has to have outcoming and incoming Flows";
 
+            //Ruleset für die Elemente CCTV, Guard, AlarmSystem
             Visio.ValidationRuleSet surveillanceValidatorRuleSet = doc.Validation.RuleSets.Add("Surveillance Validation");
             surveillanceValidatorRuleSet.Description = "Verify that the Surveillance elements are correctly used in the document.";
             Visio.ValidationRule customRule10 = surveillanceValidatorRuleSet.Rules.Add("notAccociated");
@@ -543,6 +542,7 @@ namespace Security_Visio_AddIn
             customRule12.Category = "Surveillance Element";
             customRule12.Description = "The Pool/Lane-Object associated with an Surveillance element has to have an outgoing MessageFlow";
 
+            //Ruleset für das Inspektionselement
             Visio.ValidationRuleSet inspectionValidatorRuleSet = doc.Validation.RuleSets.Add("Inspection Validation");
             inspectionValidatorRuleSet.Description = "Verify that the Inspection-Shapes are correctly used in the document.";
             Visio.ValidationRule customRule20 = inspectionValidatorRuleSet.Rules.Add("missingSequenceFlow");
@@ -555,6 +555,7 @@ namespace Security_Visio_AddIn
             customRule22.Category = "inspection-shape";
             customRule22.Description = "As each Inspection differentiates between secure and unsecure, a Violation event needs to be glued to a Inspection task, to represent the start of a DangerFlow";
 
+            //Ruleset für Violation event
             Visio.ValidationRuleSet violationValidatorRuleSet = doc.Validation.RuleSets.Add("Violation Validation");
             violationValidatorRuleSet.Description = "Verify that the Violation events are correctly used in the document.";
             Visio.ValidationRule customRule30 = violationValidatorRuleSet.Rules.Add("noOutgoingDangerFlow");
@@ -564,6 +565,7 @@ namespace Security_Visio_AddIn
             customRule31.Category = "Violation Event";
             customRule31.Description = "A Violation event has to have a outgoing DangerFlow";
 
+            //Ruleset für Elemente der Informationssicherheit
             Visio.ValidationRuleSet ciaValidatorRuleSet = doc.Validation.RuleSets.Add("CIA Validation");
             ciaValidatorRuleSet.Description = "Verify that the CIA elements are correctly used in the document.";
             Visio.ValidationRule customRule40 = ciaValidatorRuleSet.Rules.Add("availabilityNoOutMsgFlow");
@@ -573,6 +575,7 @@ namespace Security_Visio_AddIn
             customRule41.Category = "CIA Elements";
             customRule41.Description = "Information Security elements can usually only be attached to Data-elements (Dataobject/Database/Message). Availability can additionally represent the Availability of a Message Flow";
 
+            //Ruleset für EntryPoints
             Visio.ValidationRuleSet entryValidatorRuleSet = doc.Validation.RuleSets.Add("EntryPoint Validation");
             entryValidatorRuleSet.Description = "Verify that the CIA elements are correctly used in the document.";
             Visio.ValidationRule customRule50 = entryValidatorRuleSet.Rules.Add("noOutFlow");
