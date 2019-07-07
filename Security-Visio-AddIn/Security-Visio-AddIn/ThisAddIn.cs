@@ -104,7 +104,6 @@ namespace Security_Visio_AddIn
 
         public void gatewayValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet gatewayValidatorRuleSet)
         {
-            // TODO: Issue Handling: ausgehende und eingehende Flüsse
 
             Boolean mixedFlows = false;
             var incomingShapes = new List<Visio.Shape>();
@@ -119,11 +118,13 @@ namespace Security_Visio_AddIn
                     if(incoming1Dshapes.Length == 0)
                     {
                         //Issue Handling    Keine eingehenden Flows
+                        gatewayValidatorRuleSet.Rules[3].AddIssue(shape.ContainingPage, shape);
                         continue;
                     }
                     if(outgoing1Dshapes.Length == 0)
                     {
                         //Issue Handling    Keine ausgehenden Flows
+                        gatewayValidatorRuleSet.Rules[3].AddIssue(shape.ContainingPage, shape);
                         continue;
                     }
                     foreach (Object element in incoming1Dshapes)
