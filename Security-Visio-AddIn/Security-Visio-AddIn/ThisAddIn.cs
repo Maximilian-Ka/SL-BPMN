@@ -428,7 +428,8 @@ namespace Security_Visio_AddIn
                     if(out1DArray.Length == 0)
                     {
                         //customRule1.AddIssue(shape.ContainingPage, shape);
-                        entrypointValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
+                        entrypointValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape); //EP has to have an outgoing Flow
+                        continue;
                     }
                     //Array in Liste mit den out 1D shapes casten
                     foreach (Object element in out1DArray)
@@ -438,7 +439,7 @@ namespace Security_Visio_AddIn
                     // Über alle outgoing Flows laufen
                     foreach(Visio.Shape outFlow in out1DShapeList)
                     {
-                        if((outFlow.Master.Name == "DangerFlow") || (outFlow.Master.Name == "Sequenzfluss"))
+                        if(outFlow.Master.Name == "DangerFlow" || outFlow.Master.Name == "Sequenzfluss")
                         {
                             Array out2DArray = outFlow.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing2D, ""); //an den Fluss gebundenen outgoing 2D shapes
                             //Es wird davon ausgegangen, dass nur ein outgoing 2D Shape an einen Flow gebunden ist
@@ -513,7 +514,7 @@ namespace Security_Visio_AddIn
                                 {
                                     // Issue Handling: out 2D shape ist nicht Teil einer Gruppe
                                     //customRule4.AddIssue(out2DShape.ContainingPage, out2DShape);
-                                    entrypointValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
+                                    entrypointValidatorRuleSet.Rules[4].AddIssue(shape.ContainingPage, shape);
                                 }
                             }
                         }
