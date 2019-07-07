@@ -13,7 +13,6 @@ namespace Security_Visio_AddIn
         // TODO: Validator-Methoden in Validator-Klasse auslagern
         // TODO: Öffnen von Document nicht hardcoden.
         // TODO: Weitere Ausnahmen behandeln.
-        // TODO: Issue Handling implementieren
         // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
@@ -245,6 +244,7 @@ namespace Security_Visio_AddIn
 
         public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet surveillanceValidatorRuleSet)
         {
+            // TODO: überarbeiten --> Nicht merh an Pool/Lane anheftbar, da visio suckt
 
             var surveillanceShapes = new List<String>();
             var containerShapes = new List<Visio.Shape>();
@@ -252,12 +252,13 @@ namespace Security_Visio_AddIn
             surveillanceShapes.Add("CCTV");
             surveillanceShapes.Add("AlarmSystem");
             Boolean inGroup = false;
+
             foreach (Visio.Shape shape in shapes)
             {
                 if(surveillanceShapes.Contains(shape.Master.Name))
                 {
                     //Prüft ob dem Shape ein Container zugeordnet ist, wenn nicht: Verstoß gegen Modellierungsregel 1
-                    if(shape.MemberOfContainers == null){
+                    if(shape.MemberOfContainers.Length == 0){
                         //customRule1.AddIssue(shape.ContainingPage, shape);
                         surveillanceValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
                     }
@@ -271,7 +272,7 @@ namespace Security_Visio_AddIn
                         foreach(Visio.Shape container in containerShapes){
                             if(container.Master.NameU == "Group"){
                                 var outgoingShapes = new List<Visio.Shape>();
-                                Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                                Array outgoing1Dshapes = container.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
                                 foreach (Object element in outgoing1Dshapes)
                                 {
                                     outgoingShapes.Add(shapes.get_ItemFromID((int)element));
@@ -291,10 +292,10 @@ namespace Security_Visio_AddIn
                         {
                             foreach (Visio.Shape container in containerShapes)
                             {
-                                if (container.Master.NameU == "Swimlane List")
+                                if (container.Master.NameU == "Separator")
                                 {
                                     var outgoingShapes = new List<Visio.Shape>();
-                                    Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                                    Array outgoing1Dshapes = container.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
                                     foreach (Object element in outgoing1Dshapes)
                                     {
                                         outgoingShapes.Add(shapes.get_ItemFromID((int)element));
@@ -303,7 +304,7 @@ namespace Security_Visio_AddIn
                                     {
                                         // Issue Handling: Kein outgoing Message Flow an dem überwachten Lane-Shape
                                         //customRule3.AddIssue(shape.ContainingPage, shape);
-                                        surveillanceValidatorRuleSet.Rules[2].AddIssue(shape.ContainingPage, shape);
+                                        surveillanceValidatorRuleSet.Rules[3].AddIssue(shape.ContainingPage, shape);
                                     }
                                 }
                             }
