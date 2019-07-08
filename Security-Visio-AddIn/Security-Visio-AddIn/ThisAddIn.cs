@@ -104,14 +104,13 @@ namespace Security_Visio_AddIn
         public void gatewayValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet gatewayValidatorRuleSet)
         {
 
-            Boolean mixedFlows = false;
-            var incomingShapes = new List<Visio.Shape>();
-            var outgoingShapes = new List<Visio.Shape>();
-
             foreach (Visio.Shape shape in shapes)
             {
                 if(shape.Master.NameU == "Gateway")
                 {
+                    Boolean mixedFlows = false;
+                    var incomingShapes = new List<Visio.Shape>();
+                    var outgoingShapes = new List<Visio.Shape>();
                     Array incoming1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesIncoming1D, "");
                     Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
                     if(incoming1Dshapes.Length == 0)
@@ -170,14 +169,14 @@ namespace Security_Visio_AddIn
 
         public void inspectionValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet inspectionValidatorRuleSet)
         {
-            
-            var gluedShapesIDs = new List<int>();
+
             int count = 0;
             foreach(Visio.Shape shape in shapes)
             {
                 if(shape.Master.Name == "Inspection")
                 {
-                    if(shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "").Length != 1)
+                    var gluedShapesIDs = new List<int>();
+                    if (shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "").Length != 1)
                     {
                         //Issue Handling: Missing Outgoing Sequence Flow for secure case distinction
                         inspectionValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
@@ -212,11 +211,11 @@ namespace Security_Visio_AddIn
         public void violationValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet violationValidatorRuleSet)
         {
 
-            var outgoingShapes = new List<Visio.Shape>();
             foreach(Visio.Shape shape in shapes)
             {
                 if(shape.Master.Name == "Violation")
                 {
+                    var outgoingShapes = new List<Visio.Shape>();
                     Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
                     if(outgoing1Dshapes.Length == 0)
                     {
@@ -246,7 +245,6 @@ namespace Security_Visio_AddIn
         {
 
             var surveillanceShapes = new List<String>();
-            var containerShapes = new List<Visio.Shape>();
             surveillanceShapes.Add("SecurityGuard");
             surveillanceShapes.Add("CCTV");
             surveillanceShapes.Add("AlarmSystem");
@@ -257,8 +255,9 @@ namespace Security_Visio_AddIn
             {
                 if (surveillanceShapes.Contains(shape.Master.Name))
                 {
+                    var containerShapes = new List<Visio.Shape>();
                     //Prüft ob es sich um die S.G._Task handelt
-                    if(shape.Master.Name == "SecurityGuardTask.54")
+                    if (shape.Master.Name == "SecurityGuardTask.54")
                     {
                         // holt alle Flows von dem S.G._Task
                         var outgoingShapes = new List<Visio.Shape>();
@@ -438,22 +437,32 @@ namespace Security_Visio_AddIn
 
         public void EntrypointValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet entrypointValidatorRuleSet)
         {
-            // Listen für auf den EntryPoint folgende Shapes
-            var out1DShapeList = new List<Visio.Shape>();
-            var out2DShapeList = new List<Visio.Shape>();
-            // Listen für dem EntryPoint vorhergehenden Shapes
-            var in1DShapeList = new List<Visio.Shape>();
-            var in2DShapeList = new List<Visio.Shape>();
-            // Liste für Container Objecte
-            var containerShapes = new List<Visio.Shape>();
-            var containerMembers = new List<Visio.Shape>();
-            Boolean inGroup = false;
 
             // Laufe über alle Shapes des Dokuments
             foreach(Visio.Shape shape in shapes)
             {
+                if(shape.Master.Name == "PerimeterBarrier")
+                {
+                    var containerShapes = new List<Visio.Shape>();
+                    Array containerIDs = shape.MemberOfContainers; //Holt alle Container in denen das 2D Shape enthalten ist
+                    foreach (Object element in containerIDs)
+                    {
+                        containerShapes.Add(shapes.get_ItemFromID((int)element)); //Castet Container IDs in Liste mit Container Objekten
+                    }
+                }
                 if(shape.Master.Name == "EntryPoint") //Für jeden EntryPoint im Dokument
                 {
+                    // Listen für auf den EntryPoint folgende Shapes
+                    var out1DShapeList = new List<Visio.Shape>();
+                    var out2DShapeList = new List<Visio.Shape>();
+                    // Listen für dem EntryPoint vorhergehenden Shapes
+                    var in1DShapeList = new List<Visio.Shape>();
+                    var in2DShapeList = new List<Visio.Shape>();
+                    // Liste für Container Objecte
+                    var containerShapes = new List<Visio.Shape>();
+                    var containerMembers = new List<Visio.Shape>();
+                    Boolean inGroup = false;
+
                     //Es wird davon ausgegangen, dass EntryPoint immer mit nur einem outgoing Sequenzfluss (bzw. D.F.) verbunden ist
                     //zusätzlich kann ein EntryPoint aber  noch mit einem MessageFlow verbunden sein
                     //prüfe alle outgoing 1D shapes (Pfeile: Sequenzfluss, DangerFlow, MSgFlow)
