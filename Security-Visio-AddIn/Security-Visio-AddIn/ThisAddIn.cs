@@ -244,7 +244,6 @@ namespace Security_Visio_AddIn
 
         public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet surveillanceValidatorRuleSet)
         {
-            // TODO: überarbeiten --> Nicht merh an Pool/Lane anheftbar, da visio suckt
 
             var surveillanceShapes = new List<String>();
             var containerShapes = new List<Visio.Shape>();
@@ -255,7 +254,18 @@ namespace Security_Visio_AddIn
 
             foreach (Visio.Shape shape in shapes)
             {
-                if(surveillanceShapes.Contains(shape.Master.Name))
+
+                //was ist glued zu Sequenzfluss
+                //var connectedShapes = new List<Visio.Shape>();
+                //if (shape.Master.Name == "Nachrichtenfluss")
+                //{
+                //    Array connected2Flow = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, "");
+                //    foreach (Object element in connected2Flow)
+                //    {
+                //        connectedShapes.Add(shapes.get_ItemFromID((int)element));
+                //    }
+                //}
+                if (surveillanceShapes.Contains(shape.Master.Name))
                 {
                     //Prüft ob dem Shape ein Container zugeordnet ist, wenn nicht: Verstoß gegen Modellierungsregel 1
                     if(shape.MemberOfContainers.Length == 0){
@@ -290,21 +300,56 @@ namespace Security_Visio_AddIn
                         //Surveillance Shape in einer Lane/in einem Pool.
                         if (inGroup == false)
                         {
+                            //var allContList = new List<Visio.Shape>();
+                            //Array allContainers = shape.ContainingPage.GetContainers(Visio.VisContainerNested.visContainerExcludeNested);
+                            //foreach (Object element in allContainers)
+                            //{
+                            //    allContList.Add(shapes.get_ItemFromID((int)element));
+                            //}
+                            //var allShapesFromCont = new List<Visio.Shape>();
+                            //foreach(Visio.Shape cont in allContList)
+                            //{
+                            //    Array contOfCont = cont.ContainerProperties.GetMemberShapes(0);
+                            //    foreach(Object element in contOfCont)
+                            //    {
+                            //        allShapesFromCont.Add(shapes.get_ItemFromID((int)element));
+                            //    }
+                            //    break;
+                            //}
+
                             foreach (Visio.Shape container in containerShapes)
                             {
-                                if (container.Master.NameU == "Separator")
+                                if (container.Master.NameU == "Swimlane List")
                                 {
-                                    var outgoingShapes = new List<Visio.Shape>();
-                                    Array outgoing1Dshapes = container.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
-                                    foreach (Object element in outgoing1Dshapes)
+                                    var cffOfCont = new List<Visio.Shape>();
+                                    Array cont = container.MemberOfContainers;
+                                    // erstellt eine Liste mit den CFF containern des Swimlane List containers (hoffentlich immer nur einer) ->Funktioniert das?
+                                    foreach(Object element in cont)
                                     {
-                                        outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+                                        if(shapes.get_ItemFromID((int)element).Master.Name == "CFF-Container")
+                                        {
+                                            cffOfCont.Add(shapes.get_ItemFromID((int)element));
+                                        }
                                     }
-                                    if (!outgoingShapes.Any())
+
+
+
+                                    //Überspringt wahrscheinlich die schleife --> If abfrage??
+                                    foreach (Visio.Shape cff in cffOfCont)
                                     {
-                                        // Issue Handling: Kein outgoing Message Flow an dem überwachten Lane-Shape
-                                        //customRule3.AddIssue(shape.ContainingPage, shape);
-                                        surveillanceValidatorRuleSet.Rules[3].AddIssue(shape.ContainingPage, shape);
+                                        var outgoingShapes = new List<Visio.Shape>();
+                                        Array outgoing1Dshapes = cff.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                                        foreach (Object element in outgoing1Dshapes)
+                                        {
+                                            outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+                                        }
+                                        //hat der cff container outgoing 1D shapes?
+                                        if (!outgoingShapes.Any())
+                                        {
+                                            // Issue Handling: Kein outgoing Message Flow an dem überwachten Lane-Shape
+                                            //customRule3.AddIssue(shape.ContainingPage, shape);
+                                            surveillanceValidatorRuleSet.Rules[3].AddIssue(shape.ContainingPage, shape);
+                                        }
                                     }
                                 }
                             }
