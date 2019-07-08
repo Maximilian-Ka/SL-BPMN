@@ -33,7 +33,8 @@ namespace Security_Visio_AddIn
  
             //When Microsoft Visio performs validation, it fires a RuleSetValidated event for every rule set that it processes, even if a rule set is empty.
             Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
-
+            //Automation automation = new Automation();
+            //automation.Button1Clicked +=this. OnButton1Clicked;
 
             //var incomingShapes = new List<String>();
             //foreach(Visio.Shape test in vsoShapes)
@@ -44,11 +45,15 @@ namespace Security_Visio_AddIn
             //{
              //   test.ReplaceShape(doc.Masters.get_ItemU("DangerFlow"), 0);
             //}
-
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
         {
+        }
+
+        public void OnButton1Clicked()
+        {
+            Console.WriteLine("dfmk");
         }
 
         void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
