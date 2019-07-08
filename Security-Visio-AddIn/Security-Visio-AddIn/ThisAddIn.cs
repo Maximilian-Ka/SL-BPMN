@@ -249,13 +249,13 @@ namespace Security_Visio_AddIn
             surveillanceShapes.Add("CCTV");
             surveillanceShapes.Add("AlarmSystem");
             surveillanceShapes.Add("SecurityGuardTask.54"); //kp warum der Master so heißt
-            Boolean inGroup = false;
 
             foreach (Visio.Shape shape in shapes)
             {
                 if (surveillanceShapes.Contains(shape.Master.Name))
                 {
                     var containerShapes = new List<Visio.Shape>();
+                    Boolean inGroup = false;
                     //Prüft ob es sich um die S.G._Task handelt
                     if (shape.Master.Name == "SecurityGuardTask.54")
                     {
@@ -441,16 +441,16 @@ namespace Security_Visio_AddIn
             // Laufe über alle Shapes des Dokuments
             foreach(Visio.Shape shape in shapes)
             {
-                if(shape.Master.Name == "PerimeterBarrier")
+                //prüfe zunächst ob alle PerimeterBarriers in einem Container ist
+                if (shape.Master.Name == "PerimeterBarrier")
                 {
-                    var containerShapes = new List<Visio.Shape>();
-                    Array containerIDs = shape.MemberOfContainers; //Holt alle Container in denen das 2D Shape enthalten ist
-                    foreach (Object element in containerIDs)
+                    if (shape.MemberOfContainers.Length == 0)
                     {
-                        containerShapes.Add(shapes.get_ItemFromID((int)element)); //Castet Container IDs in Liste mit Container Objekten
+                        // Issue Handling: PerimeterBarrier außerhalb aller Container
+                        entrypointValidatorRuleSet.Rules[5].AddIssue(shape.ContainingPage, shape);
                     }
                 }
-                if(shape.Master.Name == "EntryPoint") //Für jeden EntryPoint im Dokument
+                if (shape.Master.Name == "EntryPoint") //Für jeden EntryPoint im Dokument
                 {
                     // Listen für auf den EntryPoint folgende Shapes
                     var out1DShapeList = new List<Visio.Shape>();
@@ -485,8 +485,14 @@ namespace Security_Visio_AddIn
                         if(outFlow.Master.Name == "DangerFlow" || outFlow.Master.Name == "Sequenzfluss")
                         {
                             Array out2DArray = outFlow.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing2D, ""); //an den Fluss gebundenen outgoing 2D shapes
-                            //Es wird davon ausgegangen, dass nur ein outgoing 2D Shape an einen Flow gebunden ist
-                            foreach(Object element in out2DArray)
+                                                                                                                            //Es wird davon ausgegangen, dass nur ein outgoing 2D Shape an einen Flow gebunden ist
+
+                            if (out2DArray.Length == 0) //wenn kein zweites Element an den Fluss gebunden ist
+                            {
+                                // Issue Handling: Sequenzfluss braucht vorangehendes Element
+                                entrypointValidatorRuleSet.Rules[6].AddIssue(outFlow.ContainingPage, outFlow);
+                            }
+                            foreach (Object element in out2DArray)
                             {
                                 out2DShapeList.Add(shapes.get_ItemFromID((int)element)); // in Liste mit den out 2D shapes casten
                             }
@@ -531,6 +537,11 @@ namespace Security_Visio_AddIn
                                                 foreach(Visio.Shape inFlow in in1DShapeList)
                                                 {
                                                     Array in2DArray = inFlow.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesIncoming2D, "");
+                                                    if (in2DArray.Length == 0)
+                                                    {
+                                                        // Issue Handling: Sequenzfluss braucht vorangehendes Element
+                                                        entrypointValidatorRuleSet.Rules[6].AddIssue(inFlow.ContainingPage, inFlow);
+                                                    }
                                                     //In Liste mit allen 2D Shapes casten --> Liste enthält das 2D Shape welchses sich vor dem EntryPoint befindet
                                                     foreach(Object element in in2DArray)
                                                     {
@@ -630,7 +641,7 @@ namespace Security_Visio_AddIn
 
             //Ruleset für EntryPoints
             Visio.ValidationRuleSet entryValidatorRuleSet = doc.Validation.RuleSets.Add("EntryPoint Validation");
-            entryValidatorRuleSet.Description = "Verify that the CIA elements are correctly used in the document.";
+            entryValidatorRuleSet.Description = "Verify that the EntryPoints are correctly used in the document.";
             Visio.ValidationRule customRule50 = entryValidatorRuleSet.Rules.Add("noOutFlow");
             customRule50.Category = "EntryPoint";
             customRule50.Description = "An EntryPoint needs to have either an outgoing Sequence Flow or an outgoing DangerFlow";
@@ -643,6 +654,12 @@ namespace Security_Visio_AddIn
             Visio.ValidationRule customRule53 = entryValidatorRuleSet.Rules.Add("no seperate zone");
             customRule53.Category = "EntryPoint";
             customRule53.Description = "The an EntryPoint following element, has to be inside a seperate zone (inside a Group object)";
+            Visio.ValidationRule customRule54 = entryValidatorRuleSet.Rules.Add("Barrier not in Container");
+            customRule54.Category = "EntryPoint";
+            customRule54.Description = "A PerimeterBarrier element has to be associated with a Group or Pool/Lane";
+            Visio.ValidationRule customRule55 = entryValidatorRuleSet.Rules.Add("Flow no preceding Element");
+            customRule55.Category = "Flow";
+            customRule55.Description = "A Flow alway has to be connected at both ends";
         }
 
         public String[] getShapeNames(Visio.Shapes shapes)         //https://docs.microsoft.com/de-de/office/vba/api/visio.shapes.item
