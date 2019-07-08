@@ -244,6 +244,7 @@ namespace Security_Visio_AddIn
 
         public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet surveillanceValidatorRuleSet)
         {
+            // TODO: SecurityGuardTask
 
             var surveillanceShapes = new List<String>();
             var containerShapes = new List<Visio.Shape>();
@@ -254,17 +255,6 @@ namespace Security_Visio_AddIn
 
             foreach (Visio.Shape shape in shapes)
             {
-
-                //was ist glued zu Sequenzfluss
-                //var connectedShapes = new List<Visio.Shape>();
-                //if (shape.Master.Name == "Nachrichtenfluss")
-                //{
-                //    Array connected2Flow = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, "");
-                //    foreach (Object element in connected2Flow)
-                //    {
-                //        connectedShapes.Add(shapes.get_ItemFromID((int)element));
-                //    }
-                //}
                 if (surveillanceShapes.Contains(shape.Master.Name))
                 {
                     //Prüft ob dem Shape ein Container zugeordnet ist, wenn nicht: Verstoß gegen Modellierungsregel 1
@@ -278,7 +268,6 @@ namespace Security_Visio_AddIn
                         foreach(Object element in containerIDs){
                             containerShapes.Add(shapes.get_ItemFromID((int)element));
                         }
-
                         foreach(Visio.Shape container in containerShapes){
                             if(container.Master.NameU == "Group"){
                                 var outgoingShapes = new List<Visio.Shape>();
@@ -300,23 +289,6 @@ namespace Security_Visio_AddIn
                         //Surveillance Shape in einer Lane/in einem Pool.
                         if (inGroup == false)
                         {
-                            //var allContList = new List<Visio.Shape>();
-                            //Array allContainers = shape.ContainingPage.GetContainers(Visio.VisContainerNested.visContainerExcludeNested);
-                            //foreach (Object element in allContainers)
-                            //{
-                            //    allContList.Add(shapes.get_ItemFromID((int)element));
-                            //}
-                            //var allShapesFromCont = new List<Visio.Shape>();
-                            //foreach(Visio.Shape cont in allContList)
-                            //{
-                            //    Array contOfCont = cont.ContainerProperties.GetMemberShapes(0);
-                            //    foreach(Object element in contOfCont)
-                            //    {
-                            //        allShapesFromCont.Add(shapes.get_ItemFromID((int)element));
-                            //    }
-                            //    break;
-                            //}
-
                             foreach (Visio.Shape container in containerShapes)
                             {
                                 if (container.Master.NameU == "Swimlane List")
@@ -324,6 +296,7 @@ namespace Security_Visio_AddIn
                                     var cffOfCont = new List<Visio.Shape>();
                                     Array cont = container.MemberOfContainers;
                                     // erstellt eine Liste mit den CFF containern des Swimlane List containers (hoffentlich immer nur einer) ->Funktioniert das?
+                                    // die Konnektoren hängen nur an den CFF-Containern: der CFF-Container beinhaltet eine "Swimlane List" und eine "Phasen List" (Container Elemente "Pool/Lane" dafür nicht nutzbar warum auch immer)
                                     foreach(Object element in cont)
                                     {
                                         if(shapes.get_ItemFromID((int)element).Master.Name == "CFF-Container")
@@ -331,9 +304,6 @@ namespace Security_Visio_AddIn
                                             cffOfCont.Add(shapes.get_ItemFromID((int)element));
                                         }
                                     }
-
-
-
                                     //Überspringt wahrscheinlich die schleife --> If abfrage??
                                     foreach (Visio.Shape cff in cffOfCont)
                                     {
