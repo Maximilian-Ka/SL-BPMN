@@ -244,19 +244,44 @@ namespace Security_Visio_AddIn
 
         public void surveillanceValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet surveillanceValidatorRuleSet)
         {
-            // TODO: SecurityGuardTask
 
             var surveillanceShapes = new List<String>();
             var containerShapes = new List<Visio.Shape>();
             surveillanceShapes.Add("SecurityGuard");
             surveillanceShapes.Add("CCTV");
             surveillanceShapes.Add("AlarmSystem");
+            surveillanceShapes.Add("SecurityGuardTask.54"); //kp warum der Master so heißt
             Boolean inGroup = false;
 
             foreach (Visio.Shape shape in shapes)
             {
                 if (surveillanceShapes.Contains(shape.Master.Name))
                 {
+                    //Prüft ob es sich um die S.G._Task handelt
+                    if(shape.Master.Name == "SecurityGuardTask.54")
+                    {
+                        // holt alle Flows von dem S.G._Task
+                        var outgoingShapes = new List<Visio.Shape>();
+                        Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                        foreach (Object element in outgoing1Dshapes)
+                        {
+                            outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+                        }
+                        Boolean hasMsgFlow = false;
+                        foreach(Visio.Shape outFlow in outgoingShapes)
+                        {
+                            if(outFlow.Master.Name == "Nachrichtenfluss")
+                            {
+                                hasMsgFlow = true;
+                            }
+                        }
+                        if(hasMsgFlow == false)
+                        {
+                            // Issue Handling: No outgoing Message Flow bei der SecurityGuardTask (Regel 4 [13])
+                            surveillanceValidatorRuleSet.Rules[4].AddIssue(shape.ContainingPage, shape);
+                        }
+                        continue; //shape von weiterer Bearbeitung ausschließen
+                    }
                     //Prüft ob dem Shape ein Container zugeordnet ist, wenn nicht: Verstoß gegen Modellierungsregel 1
                     if(shape.MemberOfContainers.Length == 0){
                         //customRule1.AddIssue(shape.ContainingPage, shape);
@@ -557,6 +582,9 @@ namespace Security_Visio_AddIn
             Visio.ValidationRule customRule12 = surveillanceValidatorRuleSet.Rules.Add("noOutMsgPool");
             customRule12.Category = "Surveillance Element";
             customRule12.Description = "The Pool/Lane-Object associated with an Surveillance element has to have an outgoing MessageFlow";
+            Visio.ValidationRule customRule13 = surveillanceValidatorRuleSet.Rules.Add("noOutMsgSGT");
+            customRule13.Category = "Surveillance Element";
+            customRule13.Description = "A SecurityGuardTask task has to have an outgoing Message Flow";
 
             //Ruleset für das Inspektionselement
             Visio.ValidationRuleSet inspectionValidatorRuleSet = doc.Validation.RuleSets.Add("Inspection Validation");
