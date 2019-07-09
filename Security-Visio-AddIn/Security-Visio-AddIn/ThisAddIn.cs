@@ -16,22 +16,22 @@ namespace Security_Visio_AddIn
         // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
-            Visio.Document doc;
-            if (Application.Documents.Count > 0)
-            {
-                doc = Application.ActiveDocument;
-            }
-            else
-            {
-                string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
-                doc = this.Application.Documents.Open(docPath);
-            }
-            insertRuleSets(doc);
+            //Visio.Document doc;
+            //if (Application.Documents.Count > 0)
+            //{
+            //    doc = Application.ActiveDocument;
+            //}
+            //else
+            //{
+            //    string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
+            //    doc = this.Application.Documents.Open(docPath);
+            //}
+            //insertRuleSets(doc);
             //Reihenfolge an Regeln nicht verändern!
-            Visio.Shapes vsoShapes = getShapesFromPage();
- 
+            //Visio.Shapes vsoShapes = getShapesFromPage();
+            Application.DocumentOpened += new Visio.EApplication_DocumentOpenedEventHandler(executeThisAddIn);
             //When Microsoft Visio performs validation, it fires a RuleSetValidated event for every rule set that it processes, even if a rule set is empty.
-            Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
+            //Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
 
 
             //var incomingShapes = new List<String>();
@@ -41,13 +41,32 @@ namespace Security_Visio_AddIn
             //}
             //foreach(Visio.Shape test in vsoShapes)
             //{
-             //   test.ReplaceShape(doc.Masters.get_ItemU("DangerFlow"), 0);
+            //   test.ReplaceShape(doc.Masters.get_ItemU("DangerFlow"), 0);
             //}
 
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
         {
+        }
+
+        public void executeThisAddIn(Visio.Document doc)
+        {
+            insertRuleSets(doc);
+            //Reihenfolge an Regeln nicht verändern!
+            Visio.Shapes vsoShapes = getShapesFromPage();
+
+            //When Microsoft Visio performs validation, it fires a RuleSetValidated event for every rule set that it processes, even if a rule set is empty.
+            Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
+        }
+        public void OnButton1Click()
+        {
+
+        }
+
+        public void OnButton2Click()
+        {
+
         }
 
         void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
