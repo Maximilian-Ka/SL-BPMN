@@ -17,16 +17,7 @@ namespace Security_Visio_AddIn
         // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
-            //Visio.Document doc;
-            //if (Application.Documents.Count > 0)
-            //{
-            //    doc = Application.ActiveDocument;
-            //}
-            //else
-            //{
-            //    string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
-            //    doc = this.Application.Documents.Open(docPath);
-            //}
+            
             //insertRuleSets(doc);
             //Reihenfolge an Regeln nicht verändern!
             //Visio.Shapes vsoShapes = getShapesFromPage();
@@ -43,6 +34,7 @@ namespace Security_Visio_AddIn
 
         public void executeThisAddIn(Visio.Document doc)
         {
+            // TODO: executeThisAddIn wird beim Öffnen eines Dokuments 3 Mal ausgeführt. Temporary fix mit Boolean insertedRuleSet
             if (insertedRuleSet == false)
             {
                 insertRuleSets(doc);
@@ -179,7 +171,7 @@ namespace Security_Visio_AddIn
                                 if(x.Master.Name != "DangerFlow")
                                 {
                                     //customRule1.AddIssue(x.ContainingPage, x);
-                                    gatewayValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
+                                    gatewayValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, x);
                                 }
                             }
                             break;                           
@@ -205,17 +197,38 @@ namespace Security_Visio_AddIn
         {
             // TODO: Dynamisch codieren, dass es nur einen outgoing sequence flow geben darf.
 
-            int count = 0;
+            //int count = 0;
             foreach(Visio.Shape shape in shapes)
             {
                 if(shape.Master.Name == "Inspection")
                 {
+                    int count = 0;
                     var gluedShapesIDs = new List<int>();
-                    if (shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "").Length > 2)
+                    if (shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "").Length > 1)
                     {
                         //Issue Handling: Missing Outgoing Sequence Flow for secure case distinction
-                        inspectionValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
+                        var outgoingShapes = new List<Visio.Shape>();
+                        Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                        int seqFlows = 0;
+                        foreach (Object element in outgoing1Dshapes)
+                        {
+                            outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+                        }
+                        foreach(Visio.Shape flow in outgoingShapes)
+                        {
+                            if(flow.Master.NameU == "Sequence Flow")
+                            {
+                                seqFlows++;
+                            }
+                        }
+                        if (seqFlows != 1)
+                        {
+                            inspectionValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
+                        }
                     }
+
+
+
                     Array glued2Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, ""); 
                     foreach(Object element in glued2Dshapes){
                         gluedShapesIDs.Add((int)element);
