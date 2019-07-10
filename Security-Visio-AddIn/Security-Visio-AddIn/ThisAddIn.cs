@@ -10,6 +10,7 @@ namespace Security_Visio_AddIn
 {
     public partial class ThisAddIn
     {
+        private Boolean insertedRuleSet = false;
         // TODO: Validator-Methoden in Validator-Klasse auslagern
         // TODO: Öffnen von Document nicht hardcoden.
         // TODO: Weitere Ausnahmen behandeln.
@@ -42,12 +43,17 @@ namespace Security_Visio_AddIn
 
         public void executeThisAddIn(Visio.Document doc)
         {
-            insertRuleSets(doc);
-            //Reihenfolge an Regeln nicht verändern!
-            Visio.Shapes vsoShapes = getShapesFromPage();
+            if (insertedRuleSet == false)
+            {
+                insertRuleSets(doc);
+                insertedRuleSet = true;
 
-            //When Microsoft Visio performs validation, it fires a RuleSetValidated event for every rule set that it processes, even if a rule set is empty.
-            Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
+                //Reihenfolge an Regeln nicht verändern!
+                Visio.Shapes vsoShapes = getShapesFromPage();
+
+                //When Microsoft Visio performs validation, it fires a RuleSetValidated event for every rule set that it processes, even if a rule set is empty.
+                Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
+            }
         }
 
         //Set ThreatLevel
