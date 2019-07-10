@@ -16,13 +16,11 @@ namespace Security_Visio_AddIn
         // TODO: Weitere Ausnahmen behandeln.
         // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
-        {
-            
+        {          
             //insertRuleSets(doc);
             //Reihenfolge an Regeln nicht verändern!
             //Visio.Shapes vsoShapes = getShapesFromPage();
-            Application.DocumentOpened += new Visio.EApplication_DocumentOpenedEventHandler(executeThisAddIn);
-            
+            Application.DocumentOpened += new Visio.EApplication_DocumentOpenedEventHandler(executeThisAddIn);          
             //When Microsoft Visio performs validation, it fires a RuleSetValidated event for every rule set that it processes, even if a rule set is empty.
             //Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
 
@@ -78,8 +76,7 @@ namespace Security_Visio_AddIn
 
         void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
         {
-            //gatewayValidator(getShapesFromPage(), getActiveDocument());
-            
+            //gatewayValidator(getShapesFromPage(), getActiveDocument());        
             if (RuleSet.Name == "Gateway Validation")
             {
                 gatewayValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
