@@ -10,39 +10,19 @@ namespace Security_Visio_AddIn
 {
     public partial class ThisAddIn
     {
+        private Boolean insertedRuleSet = false;
         // TODO: Validator-Methoden in Validator-Klasse auslagern
         // TODO: Öffnen von Document nicht hardcoden.
         // TODO: Weitere Ausnahmen behandeln.
         // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
-        {
-            Visio.Document doc;
-            if (Application.Documents.Count > 0)
-            {
-                doc = Application.ActiveDocument;
-            }
-            else
-            {
-                string docPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments) + @"\test\myDrawing.vsdx";
-                doc = this.Application.Documents.Open(docPath);
-            }
-            insertRuleSets(doc);
+        {          
+            //insertRuleSets(doc);
             //Reihenfolge an Regeln nicht verändern!
-            Visio.Shapes vsoShapes = getShapesFromPage();
- 
+            //Visio.Shapes vsoShapes = getShapesFromPage();
+            Application.DocumentOpened += new Visio.EApplication_DocumentOpenedEventHandler(executeThisAddIn);          
             //When Microsoft Visio performs validation, it fires a RuleSetValidated event for every rule set that it processes, even if a rule set is empty.
-            Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
-
-
-            //var incomingShapes = new List<String>();
-            //foreach(Visio.Shape test in vsoShapes)
-            //{
-            //    incomingShapes.Add(test.Master.NameU);
-            //}
-            //foreach(Visio.Shape test in vsoShapes)
-            //{
-             //   test.ReplaceShape(doc.Masters.get_ItemU("DangerFlow"), 0);
-            //}
+            //Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
 
         }
 
@@ -50,10 +30,53 @@ namespace Security_Visio_AddIn
         {
         }
 
+        public void executeThisAddIn(Visio.Document doc)
+        {
+            // TODO: executeThisAddIn wird beim Öffnen eines Dokuments 3 Mal ausgeführt. Temporary fix mit Boolean insertedRuleSet
+            if (insertedRuleSet == false)
+            {
+                insertRuleSets(doc);
+                insertedRuleSet = true;
+
+                //Reihenfolge an Regeln nicht verändern!
+                Visio.Shapes vsoShapes = getShapesFromPage();
+
+                //When Microsoft Visio performs validation, it fires a RuleSetValidated event for every rule set that it processes, even if a rule set is empty.
+                Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
+            }
+        }
+
+        //Set ThreatLevel
+        public void OnButton1Clicked()
+        {
+
+        }
+
+        //Replace Shape
+        public void OnButton2Clicked()
+        {
+            Visio.Document doc = Application.ActiveDocument;
+            Visio.Selection selection = Application.ActiveWindow.Selection;
+            foreach(Visio.Shape select in selection)
+            {
+                if(select.Master == null) { continue;}
+                if(select.Master.NameU == "Sequence Flow")
+                {
+                    select.ReplaceShape(doc.Masters.get_ItemU("DangerFlow"), 0);
+                    continue;
+                }
+                if (select.Master.NameU == "DangerFlow")
+                {
+                    select.ReplaceShape(doc.Masters.get_ItemU("Sequence Flow"), 0);
+                    continue;
+                }
+
+            }
+        }
+
         void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
         {
-            //gatewayValidator(getShapesFromPage(), getActiveDocument());
-            
+            //gatewayValidator(getShapesFromPage(), getActiveDocument());        
             if (RuleSet.Name == "Gateway Validation")
             {
                 gatewayValidator(getShapesFromPage(), getActiveDocument(), RuleSet);
@@ -145,7 +168,7 @@ namespace Security_Visio_AddIn
                                 if(x.Master.Name != "DangerFlow")
                                 {
                                     //customRule1.AddIssue(x.ContainingPage, x);
-                                    gatewayValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
+                                    gatewayValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, x);
                                 }
                             }
                             break;                           
@@ -159,7 +182,7 @@ namespace Security_Visio_AddIn
                             if(element.Master.Name != comparisonShape)
                             {
                                 //customRule2.AddIssue(element.ContainingPage, element);
-                                gatewayValidatorRuleSet.Rules[2].AddIssue(shape.ContainingPage, shape);
+                                gatewayValidatorRuleSet.Rules[2].AddIssue(shape.ContainingPage, element);
                             }
                         }
                     }
@@ -169,18 +192,40 @@ namespace Security_Visio_AddIn
 
         public void inspectionValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet inspectionValidatorRuleSet)
         {
+            // TODO: Dynamisch codieren, dass es nur einen outgoing sequence flow geben darf.
 
-            int count = 0;
+            //int count = 0;
             foreach(Visio.Shape shape in shapes)
             {
                 if(shape.Master.Name == "Inspection")
                 {
+                    int count = 0;
                     var gluedShapesIDs = new List<int>();
-                    if (shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "").Length != 1)
+                    if (shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "").Length > 1)
                     {
                         //Issue Handling: Missing Outgoing Sequence Flow for secure case distinction
-                        inspectionValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
+                        var outgoingShapes = new List<Visio.Shape>();
+                        Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                        int seqFlows = 0;
+                        foreach (Object element in outgoing1Dshapes)
+                        {
+                            outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+                        }
+                        foreach(Visio.Shape flow in outgoingShapes)
+                        {
+                            if(flow.Master.NameU == "Sequence Flow")
+                            {
+                                seqFlows++;
+                            }
+                        }
+                        if (seqFlows != 1)
+                        {
+                            inspectionValidatorRuleSet.Rules[1].AddIssue(shape.ContainingPage, shape);
+                        }
                     }
+
+
+
                     Array glued2Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesAll2D, ""); 
                     foreach(Object element in glued2Dshapes){
                         gluedShapesIDs.Add((int)element);

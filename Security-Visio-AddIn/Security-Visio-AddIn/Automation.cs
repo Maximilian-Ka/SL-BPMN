@@ -11,29 +11,28 @@ namespace Security_Visio_AddIn
    
     public partial class Automation
     {
-        public delegate void MyEventHandler();
-        public event MyEventHandler Button1Clicked;
+        
         private void Automation_Load(object sender, RibbonUIEventArgs e)
         {
-
+            LoadImages();
+        }
+        private void LoadImages()
+        {
+            button1.ShowImage = true;
+            button2.ShowImage = true;
+            button1.Image = Properties.Resources.Image2;
+            button2.Image = Properties.Resources.Image1;
         }
 
         private void Button1_Click(object sender, RibbonControlEventArgs e)
         {
-            //Automation aut = new Automation();
-            //this.Button1Clicked();        
-            //Console.WriteLine("ndjdsj");
-            //test();
+            Globals.ThisAddIn.OnButton1Clicked();
         }
 
-        //private void test()
-        //{
-        //    this.Button1Clicked();
-        //}
 
         private void Button2_Click(object sender, RibbonControlEventArgs e)
         {
-
+            Globals.ThisAddIn.OnButton2Clicked();
         }
     }
 }
