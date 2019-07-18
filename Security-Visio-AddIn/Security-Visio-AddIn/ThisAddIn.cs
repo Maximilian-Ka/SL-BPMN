@@ -12,18 +12,12 @@ namespace Security_Visio_AddIn
     {
         private Boolean insertedRuleSet = false;
         // TODO: Validator-Methoden in Validator-Klasse auslagern
-        // TODO: Öffnen von Document nicht hardcoden.
         // TODO: Weitere Ausnahmen behandeln.
         // TODO: Von Validator zu Validator kann die übergebene Liste an Shapes gekürzt werden, damit Shapes nicht immer wieder überprüft werden.
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {          
-            //insertRuleSets(doc);
-            //Reihenfolge an Regeln nicht verändern!
-            //Visio.Shapes vsoShapes = getShapesFromPage();
-            Application.DocumentOpened += new Visio.EApplication_DocumentOpenedEventHandler(executeThisAddIn);          
-            //When Microsoft Visio performs validation, it fires a RuleSetValidated event for every rule set that it processes, even if a rule set is empty.
-            //Application.RuleSetValidated += new Visio.EApplication_RuleSetValidatedEventHandler(HandleRuleSetValidatedEvent);
-
+            Application.DocumentOpened += new Visio.EApplication_DocumentOpenedEventHandler(executeThisAddIn); 
+            
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e)
@@ -49,7 +43,58 @@ namespace Security_Visio_AddIn
         //Set ThreatLevel
         public void OnButton1Clicked()
         {
+            Visio.Shapes shapes = getShapesFromPage();
+            foreach (Visio.Shape shape in shapes)
+            {
+                if (shape.Master == null) { continue; }
+                if (shape.Master.NameU == "Violation")
+                {
+                    string threatLevel = shape.get_Cells("Prop.BpmnSecurityThreatLevel.Value").Formula;
 
+                    //this.threatLevel(shape, threatLevel, shapes);
+                    var outgoingShapes = new List<Visio.Shape>();
+                    Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+                    foreach (Object element in outgoing1Dshapes)
+                    {
+                        outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+                    }
+                    foreach (Visio.Shape flow in outgoingShapes)
+                    {
+                        flow.get_Cells("Prop.BpmnSecurityThreatLevel.Value").Formula = threatLevel;
+                        Array outgoing2Dshapes = flow.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing2D, "");
+                        foreach (Object element in outgoing2Dshapes)
+                        {
+                            this.threatLevel(shapes.get_ItemFromID((int)element), threatLevel, shapes);
+                        }
+                    }
+                }
+            }
+        }
+
+        //Rekursive Methode zum Setzen der Threat Levels
+        public void threatLevel(Visio.Shape shape, String threatLevel, Visio.Shapes shapes)
+        {
+            if(shape.Master.Name == "Violation") { return; }
+            if (shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "").Length == 0) { return; }
+            var outgoingShapes = new List<Visio.Shape>();
+            Array outgoing1Dshapes = shape.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing1D, "");
+            foreach (Object element in outgoing1Dshapes)
+            {
+                outgoingShapes.Add(shapes.get_ItemFromID((int)element));
+            }
+            foreach (Visio.Shape flow in outgoingShapes)
+            {
+                if (flow.Master.Name == "DangerFlow")
+                {
+                    //Visio.Cell cell = shape.get_Cells("Prop.BpmnSecurityThreatLevel.Value");
+                    flow.get_Cells("Prop.BpmnSecurityThreatLevel.Value").Formula = threatLevel;
+                    Array outgoing2Dshapes = flow.GluedShapes(Visio.VisGluedShapesFlags.visGluedShapesOutgoing2D, "");
+                    foreach (Object element in outgoing2Dshapes)
+                    {
+                        this.threatLevel(shapes.get_ItemFromID((int)element), threatLevel, shapes);
+                    }
+                }
+            }
         }
 
         //Replace Shape
@@ -70,9 +115,9 @@ namespace Security_Visio_AddIn
                     select.ReplaceShape(doc.Masters.get_ItemU("Sequence Flow"), 0);
                     continue;
                 }
-
             }
         }
+        
 
         void HandleRuleSetValidatedEvent(Visio.ValidationRuleSet RuleSet)
         {
@@ -120,10 +165,7 @@ namespace Security_Visio_AddIn
             Visio.Shapes vsoShapes;
             vsoShapes = Application.ActiveDocument.Pages.get_ItemU(1).Shapes;
             return vsoShapes;
-
         }
-
-
         public void gatewayValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet gatewayValidatorRuleSet)
         {
 
@@ -189,7 +231,7 @@ namespace Security_Visio_AddIn
                 }
             }
         }
-
+        
         public void inspectionValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet inspectionValidatorRuleSet)
         {
             // TODO: Dynamisch codieren, dass es nur einen outgoing sequence flow geben darf.
@@ -482,7 +524,6 @@ namespace Security_Visio_AddIn
 
         public void EntrypointValidator(Visio.Shapes shapes, Visio.Document document, Visio.ValidationRuleSet entrypointValidatorRuleSet)
         {
-
             // Laufe über alle Shapes des Dokuments
             foreach(Visio.Shape shape in shapes)
             {
@@ -651,17 +692,18 @@ namespace Security_Visio_AddIn
             customRule13.Category = "Surveillance Element";
             customRule13.Description = "A SecurityGuardTask task has to have an outgoing Message Flow";
 
+
             //Ruleset für das Inspektionselement
             Visio.ValidationRuleSet inspectionValidatorRuleSet = doc.Validation.RuleSets.Add("Inspection Validation");
             inspectionValidatorRuleSet.Description = "Verify that the Inspection-Shapes are correctly used in the document.";
             Visio.ValidationRule customRule20 = inspectionValidatorRuleSet.Rules.Add("missingSequenceFlow");
-            customRule20.Category = "ispection-shape";
+            customRule20.Category = "Inspection Shape";
             customRule20.Description = "As each Inspection differentiates between secure and unsecure, it has to have a outgoing Sequence Flow to represent the secure path";
             Visio.ValidationRule customRule21 = inspectionValidatorRuleSet.Rules.Add("glued2DshapesMissing");
-            customRule21.Category = "inspection-shape";
+            customRule21.Category = "Inspection Shape";
             customRule21.Description = "As each Inspection differentiates between secure and unsecure, a Violation event needs to be glued to a Inspection task, to represent the start of a DangerFlow";
             Visio.ValidationRule customRule22 = inspectionValidatorRuleSet.Rules.Add("gluedViolationEvent");
-            customRule22.Category = "inspection-shape";
+            customRule22.Category = "Inspection Shape";
             customRule22.Description = "As each Inspection differentiates between secure and unsecure, a Violation event needs to be glued to a Inspection task, to represent the start of a DangerFlow";
 
             //Ruleset für Violation event
@@ -704,7 +746,7 @@ namespace Security_Visio_AddIn
             customRule54.Description = "A PerimeterBarrier element has to be associated with a Group or Pool/Lane";
             Visio.ValidationRule customRule55 = entryValidatorRuleSet.Rules.Add("Flow no preceding Element");
             customRule55.Category = "Flow";
-            customRule55.Description = "A Flow alway has to be connected at both ends";
+            customRule55.Description = "A flow always has to be connected at both ends";
         }
 
         public String[] getShapeNames(Visio.Shapes shapes)         //https://docs.microsoft.com/de-de/office/vba/api/visio.shapes.item
