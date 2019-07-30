@@ -71,7 +71,7 @@ namespace Security_Visio_AddIn
             }
         }
 
-        //Rekursive Methode zum Setzen der Threat Levels
+        //Rekursive Methode zum Setzen der Threat Levels von DangerFlows
         public void threatLevel(Visio.Shape shape, String threatLevel, Visio.Shapes shapes)
         {
             if(shape.Master.Name == "Violation") { return; }
